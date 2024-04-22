@@ -3,67 +3,93 @@ import User from "../models/user.model.js";
 import { errorHandler } from "../utils/error.js";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
+import Otp from "../models/otp.model.js";
+import sendEmail from "../utils/nodemailer.js";
+import utils from "../utils/generateOtp.js"
 
-//signup Functionality
-export const signup = async (req, res, next) => {
-  const { name, email, phone, password, confirmpassword } = req.body;
 
-  if (
-    !name ||
-    !email ||
-    !phone ||
-    !password ||
-    !confirmpassword ||
-    name === "" ||
-    email === "" ||
-    phone === "" ||
-    password === "" ||
-    confirmpassword === ""
-  ) {
-    next(errorHandler(400, "All fields are required"));
-  }
-
-  if (password !== confirmpassword) {
-    next(errorHandler(400, "Password do not match"));
-  }
-
-  const hashedPassword = bcryptjs.hashSync(password, 10);
-
-  const newUser = new User({
-    name,
-    email,
-    phone,
-    password: hashedPassword,
-    confirmpassword: hashedPassword,
-  });
+export const getOtp = async (req, res) => {
   try {
-    await newUser.save();
-    res.json("Signup successful");
+    if (!req.body?.email) return res.json({ status: 406, message: "Email is required" });
+    const otp = utils.generateOtp();
+    // time management start
+    const localTime = new Date().toLocaleTimeString('en-IN', {
+      timeZone: 'Asia/Kolkata'
+    });
+ 
+    const currentTime = new Date();
+    const futureTime = new Date(currentTime.getTime() + 1 * 60000);
+    const expiredTime = futureTime.toLocaleTimeString()
+    // time management end
+      let sendEmailOtp = await sendEmail(req.body?.email, otp);
+      if(sendEmail){
+        let verifyOtp = await Otp.findOne({email:req?.body?.email})
+        if(verifyOtp){
+          const updateOtp = await Otp.updateOne({email:req?.body?.email}, {$set:{otp:otp, createdTime:localTime, expiredTime:expiredTime}})
+          if(updateOtp){
+            return res.json({status:200,message: "OTP sent successfully" })
+          }else{
+            return res.json({status: 406, message: "OTP creation failed"})
+          }
+        }
+        const createOtp = await Otp.create({email:req?.body?.email, otp:otp,createdTime:localTime, expiredTime:expiredTime})
+        if(createOtp){
+          res.json({ status: 200, message: "OTP sent successfully" });
+        }else{
+          return res.json({status: 406, message: "OTP creation failed"})
+        }
+      }else{
+        return res.json("otp trigger failed")
+      }
   } catch (error) {
-    next(error);
+      res.status(500).json({ status: 500, message: error.message });
   }
 };
+ 
+//signUp
+ 
+export const createUser = async(req, res)=>{
+ 
+try {
+const { name, email, phone, password, confirmpassword, otp } = req.body;
+const hashedPassword = bcryptjs.hashSync(password, 10);
+if(!name || !email || !phone || !password || !confirmpassword || !otp) return res.json({status:406, status:"values required"})
+if(password !== confirmpassword) return res.json({status:406, message:"confirmPassword is wrong"})
+const checkUser = await User.findOne({email:email})
+if(checkUser) return res.json({status:406, message:"this email id already have a account"})
+ 
+let verifyOtp = await Otp.findOne({email:req?.body?.email, otp:req?.body?.otp})
+const currentTime = new Date().toLocaleTimeString('en-IN', {
+  timeZone: 'Asia/Kolkata'
+});
+ 
+if(currentTime > verifyOtp?.expiredTime) return res.json({status:200, message:"time verification time up please wait 5 minutes after resend otp"})
+ 
+if(verifyOtp) {
+  const createUser = await User.create({
+    name : name,
+    email:email,
+    phone:phone,
+    password:hashedPassword,
+    confirmpassword:hashedPassword,
+    verifiedEmail:true
+  })
+  if(createUser){
+      return res.json(createUser)
+  }else{
+  return res.json({status:406, message:"user created failed"})
+  }
+}else{
+  return res.json({status:406, message:"invaid otp"})
+}
+  } catch (err) {
+    return res.json({status:500, message:err.message})
+  }
+ 
+}
 
-//signup as guest
 
-// export const signupasguest = async (req, res, next) => {
-//   const { name, phone } = req.body;
 
-//   if (!name || !phone || name === "" || phone === "") {
-//     next(errorHandler(400, "All fields are required"));
-//   }
-
-//   const newUser = new UserAsGuest({
-//     name,
-//     phone,
-//   });
-//   try {
-//     await newUser.save();
-//     res.json("Signup as guest successful");
-//   } catch (error) {
-//     next(error);
-//   }
-// };
 
 //Signin functionality
 
@@ -106,43 +132,7 @@ export const signin = async (req, res, next) => {
   }
 };
 
-//signin as guest
 
-// export const signinasguest = async (req, res, next) => {
-//   const { name, phone } = req.body;
-
-//   if (!name || !phone || !name === "" || phone === "") {
-//     next(errorHandler(400, "All fields are required"));
-//   }
-//   try {
-//     const validGuestname = await UserAsGuest.findOne({ name });
-//     if (!validGuestname) {
-//       return next(errorHandler(404, "Invalid name"));
-//     }
-//     const validGuestPhone = await UserAsGuest.findOne({ phone });
-//     if (!validGuestPhone) {
-//       return next(errorHandler(400, "Phone number not exist"));
-//     }
-//     const token = jwt.sign({ id: validGuestname._id }, process.env.JWT_SECRET);
-
-//     //to hide the password from the returned signin information and return the same for security purpose
-//     //separating password and rest of the information and sending the rest.
-//     const {
-//       password: pass,
-//       confirmpassword: confirmpassword,
-//       ...rest
-//     } = validGuestname._doc;
-
-//     res
-//       .status(200)
-//       .cookie("access_token", token, {
-//         httpOnly: true,
-//       })
-//       .json(rest);
-//   } catch (error) {
-//     next(error);
-//   }
-// };
 
 //signup using google
 export const google = async (req, res, next) => {
@@ -182,3 +172,107 @@ export const google = async (req, res, next) => {
     next(error);
   }
 };
+
+
+
+// //signup Functionality
+// export const signup = async (req, res, next) => {
+//   const { name, email, phone, password, confirmpassword } = req.body;
+
+//   if (
+//     !name ||
+//     !email ||
+//     !phone ||
+//     !password ||
+//     !confirmpassword ||
+//     name === "" ||
+//     email === "" ||
+//     phone === "" ||
+//     password === "" ||
+//     confirmpassword === ""
+//   ) {
+//     next(errorHandler(400, "All fields are required"));
+//   }
+
+//   if (password !== confirmpassword) {
+//     next(errorHandler(400, "Password do not match"));
+//   }
+
+//   const hashedPassword = bcryptjs.hashSync(password, 10);
+
+//   const newUser = new User({
+//     name,
+//     email,
+//     phone,
+//     password: hashedPassword,
+//     confirmpassword: hashedPassword,
+//   });
+//   try {
+//     await newUser.save();
+//     res.json("Signup successful");
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+//signup as guest
+
+// export const signupasguest = async (req, res, next) => {
+//   const { name, phone } = req.body;
+
+//   if (!name || !phone || name === "" || phone === "") {
+//     next(errorHandler(400, "All fields are required"));
+//   }
+
+//   const newUser = new UserAsGuest({
+//     name,
+//     phone,
+//   });
+//   try {
+//     await newUser.save();
+//     res.json("Signup as guest successful");
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+
+
+//signin as guest
+
+// export const signinasguest = async (req, res, next) => {
+//   const { name, phone } = req.body;
+
+//   if (!name || !phone || !name === "" || phone === "") {
+//     next(errorHandler(400, "All fields are required"));
+//   }
+//   try {
+//     const validGuestname = await UserAsGuest.findOne({ name });
+//     if (!validGuestname) {
+//       return next(errorHandler(404, "Invalid name"));
+//     }
+//     const validGuestPhone = await UserAsGuest.findOne({ phone });
+//     if (!validGuestPhone) {
+//       return next(errorHandler(400, "Phone number not exist"));
+//     }
+//     const token = jwt.sign({ id: validGuestname._id }, process.env.JWT_SECRET);
+
+//     //to hide the password from the returned signin information and return the same for security purpose
+//     //separating password and rest of the information and sending the rest.
+//     const {
+//       password: pass,
+//       confirmpassword: confirmpassword,
+//       ...rest
+//     } = validGuestname._doc;
+
+//     res
+//       .status(200)
+//       .cookie("access_token", token, {
+//         httpOnly: true,
+//       })
+//       .json(rest);
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+

@@ -12,7 +12,6 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      unique: true,
     },
     email: {
       type: String,
@@ -43,7 +42,6 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: () => true,
     },
-    wishlist: [mongoose.Schema.Types.ObjectId],
     createdAt: {
       type: Date,
       default: () => Date.now(),
@@ -63,6 +61,10 @@ const userSchema = new mongoose.Schema(
           default: () => false
       }     
   }],
+  verifiedEmail:{
+    type:Boolean,
+    default : false
+  },
 //   wallet:[{
 //     amount: Number,
 //     timestamp: {

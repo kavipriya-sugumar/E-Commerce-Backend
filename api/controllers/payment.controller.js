@@ -1,4 +1,3 @@
-import express from 'express';
 import Razorpay from 'razorpay';
 import dotenv from 'dotenv';
 import PaymentModel from '../models/payment.model.js';
