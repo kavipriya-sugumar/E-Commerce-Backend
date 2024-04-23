@@ -14,26 +14,22 @@ export const verifyToken = (req, res, next) => {
   });
 };
 
-
-
-export const verifyTokenAuthorization =(req,res,next)=>{
-  verifyToken(req, res, () => {
-    if (req.user.id === req.params.id || req.user.isAdmin) {
-      next();
-    } else {
-      res.status(403).json("You are not alowed to do that!");
-    }
-  });
+export const verifyUser = async(req,res,next)=>{
+  const token = req.headers['authorization'].split(" ")[1];
+  if (!token) return res.json(401, "invaild token");
+  const decoded = jwt.decode(token, process.env.JWT_SECRET)
+  const findUser = await User.findOne({_id : decoded?.userId})
+  if(!findUser) return res.json({status:406, message:"invaild user"})
+  next()
 }
-
-
-
-export const verifyTokenAndAdmin = (req, res, next) => {
-  verifyToken(req, res, () => {
-    if (req.user.isAdmin) {
-      next();
-    } else {
-      res.status(403).json("You are not alowed to do that!");
-    }
-  });
+ 
+ 
+ 
+export const verifyTokenAndAdmin = async(req, res, next) => {
+  const token = req.headers['authorization'].split(" ")[1];
+  if (!token) return res.json(401, "invaild token");
+  const decoded = jwt.decode(token, process.env.JWT_SECRET)
+  const findUser = await User.findOne({_id : decoded?.userId, isAdmin : true})
+  if(!findUser) return res.json({status:406, message:"invaild user"})
+  next()
 };

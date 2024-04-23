@@ -10,7 +10,7 @@ const router = express.Router();
 
 router.get("/test", test);
 //delete account functionality route
-router.delete("/delete/:userId", verifyToken, deleteUser);
+router.delete("/delete/:userId", deleteUser);
 //logout functionality route
 router.post("/logout", logout);
 //get users information in admin side

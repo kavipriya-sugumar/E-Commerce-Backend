@@ -15,7 +15,7 @@ router.post("/signup", createUser);
 //signupasguest
 // router.post("/signupasguest", signupasguest);
 //signin route
-router.post("/signin", signin);
+router.get("/signin", signin);
 //get OTP
 router.post("/getotp",getOtp);
 //signinasguest route

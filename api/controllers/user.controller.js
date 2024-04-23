@@ -1,7 +1,8 @@
-import bcryptjs from "bcryptjs";
+// import bcryptjs from "bcryptjs";
+import mongoose from "mongoose";
 import User from "../models/user.model.js";
 import { errorHandler } from "../utils/error.js";
-import { parse } from "dotenv";
+// import { parse } from "dotenv";
 // import UserAsGuest from "../models/userasguest.model.js";
 
 export const test = (req, res) => {
@@ -11,16 +12,17 @@ export const test = (req, res) => {
 //delete account functionality
 
 export const deleteUser = async (req, res, next) => {
-  if (req.user.id !== req.params.userId) {
-    return next(errorHandler(403, "You are not allowed to delete this user"));
+  const findUser = await User.findOne({_id : new mongoose.Types.ObjectId(req?.body?.userId)})
+  if(findUser){
+   const userDelete = await User.deleteOne({_id:new mongoose.Types.ObjectId(findUser?._id)})
+   if(userDelete){
+     return res.json({status:200, message:"account has been deleted"})
+   }else{
+     return res.json({status:406, message:"account deleted failed"})
+   }
   }
-  try {
-    await User.findByIdAndDelete(req.params.userId);
-    res.status(200).json("User has been deleted");
-  } catch (error) {
-    next(error);
-  }
-};
+ };
+
 
 //logout functionality
 export const logout = (req, res, next) => {
@@ -67,7 +69,7 @@ export const getUsers = async (req, res, next) => {
       createdAt: { $gte: oneMonthAgo },
     });
 
-    res.status(200).json({
+   res.status(200).json({
       users: usersWithoutPassword,
       totalUsers,
       lastMonthUsers,
