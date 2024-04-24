@@ -1,16 +1,15 @@
 import express from "express";
-import { verifyToken ,verifyTokenAndAdmin} from "../utils/verifyUser.js";
-import { createAsset, getAssetsById } from "../controllers/asset.controller.js";
-import { deleteAsset } from "../controllers/asset.controller.js";
-import { getAssets } from "../controllers/asset.controller.js";
-import { editAssets } from "../controllers/asset.controller.js";
+import { verifyToken } from "../utils/verifyUser.js";
+import { assetsByCategory, createAsset, deleteFiles, getAllAssets, getAssetsById, updateAsset,  } from "../controllers/asset.controller.js";
+import { uploadFiles } from "../utils/s3UploadClient.js";
 
 const router = express.Router();
 
-router.post("/createAsset",verifyTokenAndAdmin, verifyToken, createAsset);
-router.get("/getAssets/:id",getAssetsById);
-router.delete("/deleteasset/:assetId",verifyTokenAndAdmin, verifyToken, deleteAsset);
-router.get("/getAssets", getAssets);
-router.put("/editAssets/:assetId",verifyTokenAndAdmin, verifyToken, editAssets);
+router.post("/createAsset/:categoryId",uploadFiles, createAsset);
+router.get("/getAssets/:assetId",getAssetsById);
+router.delete("/deleteasset/:assetId", deleteFiles);
+router.get("/getByCategory/:categoryId",assetsByCategory)
+router.get("/getAllAssets", getAllAssets);
+router.put("/updateAssets/:assetId",  updateAsset);
 
 export default router;
