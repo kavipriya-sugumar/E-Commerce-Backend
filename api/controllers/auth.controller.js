@@ -44,29 +44,8 @@ export const signup = async (req, res, next) => {
   }
 };
 
-//signup as guest
 
-export const signupasguest = async (req, res, next) => {
-  const { name, phone } = req.body;
-
-  if (!name || !phone || name === "" || phone === "") {
-    next(errorHandler(400, "All fields are required"));
-  }
-
-  const newUser = new UserAsGuest({
-    name,
-    phone,
-  });
-  try {
-    await newUser.save();
-    res.json("Signup as guest successful");
-  } catch (error) {
-    next(error);
-  }
-};
-
-//Signin functionality
-
+//signin
 export const signin = async (req, res, next) => {
   const { email, password, confirmpassword } = req.body;
 
@@ -87,24 +66,16 @@ export const signin = async (req, res, next) => {
       process.env.JWT_SECRET
     );
 
-    //to hide the passwasd from the returned signin information and return the same for security purpose
-    //separating password and rest of the information and sending the rest.
-    const {
-      password: pass,
-      confirmpassword: confirmpassword,
-      ...rest
-    } = validUser._doc;
-
-    res
-      .status(200)
-      .cookie("access_token", token, {
-        httpOnly: true,
-      })
-      .json(rest);
+    if(token){
+      return res.json({"token":token})
+    }else{
+      return res.json("err")
+    }
   } catch (error) {
     next(error);
   }
 };
+
 
 //signin as guest
 
