@@ -6,11 +6,12 @@ import userRoutes from "./routes/user.route.js";
 import authRoutes from "./routes/auth.route.js";
 import categoryRoutes from "./routes/category.route.js";
 import cookieParser from "cookie-parser";
-import adminRoutes from "./routes/admin.route.js";
 import assetRoutes from "./routes/asset.route.js";
 import cartRoutes from "./routes/cart.route.js";
-import orderRoutes from "./routes/orders.routes.js"
-// import ideaRoutes from "./routes/idea.route.js"
+import orderRoutes from "./routes/orders.routes.js";
+import wishlistRoutes from "./routes/wishlist.route.js";
+import feedbackRoutes from "./routes/feedback.route.js";
+// import paymentRoutes from "./routes/payment.route.js"
 
 dotenv.config();
 
@@ -29,17 +30,19 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
-app.listen(3000, () => {
-  console.log("Server is  listening to port 3000!");
+app.listen(7000, () => {
+  console.log("Server is  listening to port 7000!");
 });
 
 app.use("/api/user", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/category", categoryRoutes);
-app.use("/api/admin", adminRoutes);
 app.use("/api/asset", assetRoutes);
 app.use("/api/cart", cartRoutes);
+app.use("/api/wishlist",wishlistRoutes);
 app.use("/api/orders",orderRoutes);
+// app.use("/api/payment",paymentRoutes)
+app.use("/api/feedback",feedbackRoutes);
 
 //middleware to handle and display errors
 app.use((err, req, res, next) => {
