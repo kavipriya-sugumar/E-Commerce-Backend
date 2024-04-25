@@ -12,7 +12,7 @@ export const test = (req, res) => {
 //delete account functionality
 
 export const deleteUser = async (req, res, next) => {
-  const findUser = await User.findOne({_id : new mongoose.Types.ObjectId(req?.body?.userId)})
+  const findUser = await User.findOne({_id : req?.user?._id})
   if(findUser){
    const userDelete = await User.deleteOne({_id:new mongoose.Types.ObjectId(findUser?._id)})
    if(userDelete){
