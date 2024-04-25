@@ -10,8 +10,12 @@ import assetRoutes from "./routes/asset.route.js";
 import cartRoutes from "./routes/cart.route.js";
 import orderRoutes from "./routes/orders.routes.js";
 import wishlistRoutes from "./routes/wishlist.route.js";
+<<<<<<< HEAD
 import feedbackRoutes from "./routes/feedback.route.js";
 // import paymentRoutes from "./routes/payment.route.js"
+=======
+import paymentRoutes from "./routes/payment.route.js"
+>>>>>>> 38a86b5f93c26ff8c37e60353da82fb9e9a88823
 
 dotenv.config();
 
@@ -41,8 +45,12 @@ app.use("/api/asset", assetRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist",wishlistRoutes);
 app.use("/api/orders",orderRoutes);
+<<<<<<< HEAD
 // app.use("/api/payment",paymentRoutes)
 app.use("/api/feedback",feedbackRoutes);
+=======
+app.use("/api/payment",paymentRoutes)
+>>>>>>> 38a86b5f93c26ff8c37e60353da82fb9e9a88823
 
 //middleware to handle and display errors
 app.use((err, req, res, next) => {

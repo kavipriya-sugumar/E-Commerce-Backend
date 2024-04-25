@@ -31,8 +31,12 @@ export const verifyTokenAndAdmin = async(req, res, next) => {
   const token = req.headers['authorization'].split(" ")[1];
   if (!token) return res.json(401, "invaild token");
   const decoded = jwt.decode(token, process.env.JWT_SECRET)
+<<<<<<< HEAD
   console.log(decoded)
   const findUser = await User.findOne({_id : decoded?.id, isAdmin : true})
+=======
+  const findUser = await User.findOne({_id : decoded?.userId, isAdmin : true})
+>>>>>>> 38a86b5f93c26ff8c37e60353da82fb9e9a88823
   if(!findUser) return res.json({status:406, message:"invaild user"})
   next()
 };

@@ -4,8 +4,13 @@ import { errorHandler } from "../utils/error.js";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Otp from "../models/otp.model.js";
+<<<<<<< HEAD
 import utils from "../utils/generateOtp.js"
 import { sendMailOtp } from "../utils/nodemailer.js";
+=======
+import sendEmail from "../utils/nodemailer.js";
+import utils from "../utils/generateOtp.js"
+>>>>>>> 38a86b5f93c26ff8c37e60353da82fb9e9a88823
 
 
 export const getOtp = async (req, res) => {
@@ -21,8 +26,13 @@ export const getOtp = async (req, res) => {
     const futureTime = new Date(currentTime.getTime() + 1 * 60000);
     const expiredTime = futureTime.toLocaleTimeString()
     // time management end
+<<<<<<< HEAD
       let sendEmailOtp = await sendMailOtp(req.body?.email, otp);
       if(sendMailOtp){
+=======
+      let sendEmailOtp = await sendEmail(req.body?.email, otp);
+      if(sendEmail){
+>>>>>>> 38a86b5f93c26ff8c37e60353da82fb9e9a88823
         let verifyOtp = await Otp.findOne({email:req?.body?.email})
         if(verifyOtp){
           const updateOtp = await Otp.updateOne({email:req?.body?.email}, {$set:{otp:otp, createdTime:localTime, expiredTime:expiredTime}})
@@ -113,15 +123,37 @@ export const signin = async (req, res, next) => {
       process.env.JWT_SECRET
     );
 
+<<<<<<< HEAD
     if(token){
       return res.json({"token":token})
     }else{
       return res.json("err")
     }
+=======
+    //to hide the passwasd from the returned signin information and return the same for security purpose
+    //separating password and rest of the information and sending the rest.
+    const {
+      password: pass,
+      confirmpassword: confirmpassword,
+      ...rest
+    } = validUser._doc;
+
+    res
+      .status(200)
+      .cookie("access_token", token, {
+        httpOnly: true,
+      })
+      .json(rest);
+>>>>>>> 38a86b5f93c26ff8c37e60353da82fb9e9a88823
   } catch (error) {
     next(error);
   }
 };
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> 38a86b5f93c26ff8c37e60353da82fb9e9a88823
 
 //signup using google
 export const google = async (req, res, next) => {
@@ -162,3 +194,109 @@ export const google = async (req, res, next) => {
   }
 };
 
+<<<<<<< HEAD
+=======
+
+
+// //signup Functionality
+// export const signup = async (req, res, next) => {
+//   const { name, email, phone, password, confirmpassword } = req.body;
+
+//   if (
+//     !name ||
+//     !email ||
+//     !phone ||
+//     !password ||
+//     !confirmpassword ||
+//     name === "" ||
+//     email === "" ||
+//     phone === "" ||
+//     password === "" ||
+//     confirmpassword === ""
+//   ) {
+//     next(errorHandler(400, "All fields are required"));
+//   }
+
+//   if (password !== confirmpassword) {
+//     next(errorHandler(400, "Password do not match"));
+//   }
+
+//   const hashedPassword = bcryptjs.hashSync(password, 10);
+
+//   const newUser = new User({
+//     name,
+//     email,
+//     phone,
+//     password: hashedPassword,
+//     confirmpassword: hashedPassword,
+//   });
+//   try {
+//     await newUser.save();
+//     res.json("Signup successful");
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+//signup as guest
+
+// export const signupasguest = async (req, res, next) => {
+//   const { name, phone } = req.body;
+
+//   if (!name || !phone || name === "" || phone === "") {
+//     next(errorHandler(400, "All fields are required"));
+//   }
+
+//   const newUser = new UserAsGuest({
+//     name,
+//     phone,
+//   });
+//   try {
+//     await newUser.save();
+//     res.json("Signup as guest successful");
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+
+
+//signin as guest
+
+// export const signinasguest = async (req, res, next) => {
+//   const { name, phone } = req.body;
+
+//   if (!name || !phone || !name === "" || phone === "") {
+//     next(errorHandler(400, "All fields are required"));
+//   }
+//   try {
+//     const validGuestname = await UserAsGuest.findOne({ name });
+//     if (!validGuestname) {
+//       return next(errorHandler(404, "Invalid name"));
+//     }
+//     const validGuestPhone = await UserAsGuest.findOne({ phone });
+//     if (!validGuestPhone) {
+//       return next(errorHandler(400, "Phone number not exist"));
+//     }
+//     const token = jwt.sign({ id: validGuestname._id }, process.env.JWT_SECRET);
+
+//     //to hide the password from the returned signin information and return the same for security purpose
+//     //separating password and rest of the information and sending the rest.
+//     const {
+//       password: pass,
+//       confirmpassword: confirmpassword,
+//       ...rest
+//     } = validGuestname._doc;
+
+//     res
+//       .status(200)
+//       .cookie("access_token", token, {
+//         httpOnly: true,
+//       })
+//       .json(rest);
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+>>>>>>> 38a86b5f93c26ff8c37e60353da82fb9e9a88823
