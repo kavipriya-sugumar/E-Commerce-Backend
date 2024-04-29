@@ -24,12 +24,10 @@ export const verifyUser = async(req,res,next)=>{
   const decoded = jwt.decode(token, process.env.JWT_SECRET)
   const findUser = await User.findOne({_id : decoded?.id})
   if(!findUser) return res.json({status:406, message:"invaild user"})
-  if(findUser){
-    req.user=findUser
     next()
 
   }
-}
+
  
  
  

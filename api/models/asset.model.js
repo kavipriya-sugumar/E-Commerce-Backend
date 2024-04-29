@@ -1,11 +1,17 @@
 import mongoose from 'mongoose';
 import Category from './category.model.js';
-
+ 
 const assetSchema = new mongoose.Schema({
   assetName: { type: String, required: true },
+  assetId:{type:Number, required:true},
   price: { type: String, required: true },
   description: { type: String, required: true },  
-  category:{type: mongoose.Schema.Types.ObjectId, 
+  quads:{type: Number, required:true},
+ totaltriangles:{type:Number, required:true},
+  vertices: {type: Number,required:true},
+  materials: {type: Number,required:true},
+  rigged: {type:Boolean,required:true},
+  category:{type: mongoose.Schema.Types.ObjectId,
     ref:Category ,
     required: true, },
   files: [
@@ -18,9 +24,9 @@ const assetSchema = new mongoose.Schema({
       key:{type:String, required:true}
     }
   ]
-  
+ 
 });
-
+ 
 const Asset = mongoose.model('Asset', assetSchema);
-
+ 
 export default Asset;

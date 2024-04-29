@@ -4,7 +4,7 @@ import { createCategory, deleteCategory, getAllCategory, getCategoryById, update
 
 const router = express.Router();
 
-router.post("/createCategory",verifyTokenAndAdmin, createCategory);
+router.post("/createCategory", verifyTokenAndAdmin, createCategory);
 router.get("/getAllCategory", getAllCategory);
 router.get("/getCategory/:id",getCategoryById) 
 router.delete("/deleteCategory/:categoryId",verifyTokenAndAdmin, deleteCategory);

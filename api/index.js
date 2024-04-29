@@ -10,7 +10,7 @@ import assetRoutes from "./routes/asset.route.js";
 import cartRoutes from "./routes/cart.route.js";
 import orderRoutes from "./routes/orders.routes.js";
 import wishlistRoutes from "./routes/wishlist.route.js";
-// import feedbackRoutes from "./routes/feedback.route.js";
+import feedbackRoutes from "./routes/feedback.route.js";
 // import paymentRoutes from "./routes/payment.route.js"
 
 dotenv.config();
@@ -42,7 +42,7 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist",wishlistRoutes);
 app.use("/api/orders",orderRoutes);
 // app.use("/api/payment",paymentRoutes)
-// app.use("/api/feedback",feedbackRoutes);
+app.use("/api/feedback",feedbackRoutes);
 
 //middleware to handle and display errors
 app.use((err, req, res, next) => {

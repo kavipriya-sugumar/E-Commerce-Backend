@@ -4,6 +4,7 @@ import Category from "../models/category.model.js";
 import { bytesToSize } from "../utils/bytesToSize.js";
 import { errorHandler } from "../utils/error.js";
 import { generateS3FileUrl, s3 } from "../utils/s3UploadClient.js";
+import { getFileExtension } from "../utils/fileExtension.js";
 
 
 
@@ -12,7 +13,7 @@ export const createAsset = async (req, res, next) => {
   try {
 if (!req.files) res.status(400).json({ error: 'No files were uploaded.' })
     const uploadedFiles=req.files;
-    const {assetName,price,description}=req.body;
+    const {assetName,price,description,quads,totaltriangles,vertices,materials,rigged}=req.body;
     const categoryId=req.params.categoryId;
     const assetCategory=await Category.findById(categoryId);
 if(!assetCategory){
@@ -25,35 +26,40 @@ const files =  uploadedFiles.map((file) => ({
   format: getFileExtension(file.originalname),
   url:generateS3FileUrl(file.key),
   key:file.key
-
+ 
  
 }));
-
+ 
 const asset = new Asset({
   assetName,
   price,
   description,
+  quads,
+  totaltriangles,
+  vertices,
+  materials,
+  rigged,
   category:assetCategory,
   files
 })
-
+ 
 const createdAssets = await Asset.insertMany(asset);
-
+ 
 res.status(201).json({
     message: 'Successfully uploaded ' + req.files.length + ' files!',
     files: req.files
   })
 }
-
+ 
   catch (error) {
       console.error('Error creating assets:', error);
-  
+ 
       if (error.name === 'ValidationError') {
         return res.status(400).json({ error: 'Validation error. Please check your input data.' });
       }
-  
+ 
       next(errorHandler(error));
-    
+   
   }
 };
 

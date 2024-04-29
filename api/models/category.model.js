@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+ 
 const categorySchema = new mongoose.Schema(
   {
     categoryName: {
@@ -10,13 +10,22 @@ const categorySchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    key:{
+    imageKey:{
+      type: String,
+      required:true
+    },
+ 
+    iconUrl:{
       type: String,
       required: true,
+    },
+    iconKey:{
+      type: String,
+      required:true
     }
   },
   { timestamps: true }
 );
 const Category = mongoose.model("Category", categorySchema);
-
+ 
 export default Category;

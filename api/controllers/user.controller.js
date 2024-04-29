@@ -36,6 +36,28 @@ export const logout = (req, res, next) => {
   }
 };
 
+//get particular user
+export const getParticularUser = async(req, res)=>{
+  try {
+    const findUser = await User.findOne({_id : req?.query?.id, verifiedEmail : true, })
+  if(!findUser) return res.json({status:406, message:"invaild user id"})
+  return res.status(200).json({status:200, message:{
+    _id:findUser?._id,
+    name:findUser?.name,
+    email:findUser?.email,
+    phone:findUser?.phone,
+    verifiedEmail:findUser?.verifiedEmail,
+    isActive:findUser?.isActive
+}})
+  } catch (err) {
+    return res.status(406).json({status:406, message:err.message})
+  }
+ 
+}
+
+
+
+
 //get all users
 export const getUsers = async (req, res, next) => {
   // if (!req.user.isAdmin) {

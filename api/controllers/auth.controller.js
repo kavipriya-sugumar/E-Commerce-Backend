@@ -6,8 +6,9 @@ import jwt from "jsonwebtoken";
 import Otp from "../models/otp.model.js";
 import utils from "../utils/generateOtp.js"
 import sendEmail  from "../utils/nodemailer.js";
-
-
+import mongoose from "mongoose";
+ 
+ 
 export const getOtp = async (req, res) => {
   try {
     if (!req.body?.email) return res.json({ status: 406, message: "Email is required" });
@@ -87,78 +88,77 @@ if(verifyOtp) {
   }
  
 }
-
-
-
-
+ 
+ 
+ 
+ 
 //Signin functionality
 //signin
 export const signin = async (req, res, next) => {
-  const { email, password, confirmpassword } = req.body;
-
-  if (!email || !password || !email === "" || password === "") {
-    next(errorHandler(400, "All fields are required"));
-  }
+  const { email, password } = req.body;
+ 
   try {
-    const validUser = await User.findOne({ email, });
+    // Validate input fields
+    if (!email || !password || email === "" || password === "") {
+      return next(errorHandler(400, "All fields are required"));
+    }
+ 
+    // Find user by email
+    const validUser = await User.findOne({ email });
+ 
     if (!validUser) {
       return next(errorHandler(404, "User not found"));
     }
+ 
+    // Compare passwords
     const validPassword = bcryptjs.compareSync(password, validUser.password);
+ 
     if (!validPassword) {
       return next(errorHandler(400, "Invalid password"));
     }
+ 
+    // Generate JWT token
     const token = jwt.sign(
       { id: validUser._id, isAdmin: validUser.isAdmin },
       process.env.JWT_SECRET
     );
-
-    if(token){
-      return res.json({"token":token})
-    }else{
-      return res.json("err")
-    }
+ 
+    // Remove sensitive data from user object (e.g., password)
+    const { password: userPassword,confirmpassword, ...userInfo } = validUser.toObject();
+ 
+    // Set cookie with token (secure: true for HTTPS)
+    res.cookie('token', token, { httpOnly: true, secure: true });
+ 
+    // Return success message and token with user info
+    return res.status(200).json({ message: "Login success", token, ...userInfo });
   } catch (error) {
-    next(error);
+    // Handle errors
+    next(error); // Pass error to global error handler
   }
 };
-
+ 
 //signup using google
 export const google = async (req, res, next) => {
-  const { email, name } = req.body;
   try {
+    const { email, name } = req.body;
+console.log(email, name)
     const user = await User.findOne({ email });
-    if (user) {
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
-      const { password, ...rest } = user._doc;
-      res
-        .status(200)
-        .cookie("access_token", token, {
-          httpOnly: true,
-        })
-        .json(rest);
-    } else {
-      const generatedPassword =
-        Math.random().toString(36).slice(-8) +
-        Math.random().toString(36).slice(-8);
-      const hashedPassword = bcryptjs.hashSync(generatedPassword, 10);
-      const newUser = new User({
-        name,
-        email,
-        password: hashedPassword,
-      });
-      await newUser.save();
-      const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET);
-      const { password, ...rest } = newUser._doc;
-      res
-        .status(200)
-        .cookie("access_token", token, {
-          httpOnly: true,
-        })
-        .json(rest);
+    if(user){
+      res.status(401).json("user alredy created");
     }
+
+    const createUser = await User.create({name, email})
+    if(!createUser) {
+      return res.status(406).json({message:"user creation failed"})
+    } else{
+      return res.status(200).json({message:createUser})
+      // const token = jwt.sign(
+      //   { id: newUser._id, isAdmin: newUser.isAdmin },
+      //   process.env.JWT_SECRET
+      // );
+    }
+    
   } catch (error) {
     next(error);
   }
 };
-

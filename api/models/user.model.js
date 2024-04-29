@@ -22,17 +22,17 @@ const userSchema = new mongoose.Schema(
       },
     },
     phone: {
-      type: Number,
-      required: true,
+      type: String,
+      // required: true,
       min: [10, "Enter valid phone number"],
     },
     password: {
       type: String,
-      required: true,
+      // required: true,
     },
     confirmpassword: {
       type: String,
-      required: true,
+      // required: true,
     },
     isAdmin: {
       type: Boolean,
