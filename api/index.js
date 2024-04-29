@@ -30,6 +30,10 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
+app.get("/", (req, res) => {
+  res.send("Welcome to the Server! 🌐");
+});
+
 app.listen(7000, () => {
   console.log("Server is  listening to port 7000!");
 });
