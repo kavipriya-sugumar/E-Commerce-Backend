@@ -19,6 +19,7 @@ if (!req.files) res.status(400).json({ error: 'No files were uploaded.' })
 if(!assetCategory){
   res.status(404).json({message:"Category not found"})
 }
+console.log(uploadedFiles);
 const files =  uploadedFiles.map((file) => ({
   name: file.originalname,
   type: file.mimetype,
