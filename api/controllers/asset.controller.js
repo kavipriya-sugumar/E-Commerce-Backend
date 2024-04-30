@@ -13,7 +13,7 @@ export const createAsset = async (req, res, next) => {
   try {
 if (!req.files) res.status(400).json({ error: 'No files were uploaded.' })
     const uploadedFiles=req.files;
-    const {assetName,price,description,quads,totaltriangles,vertices,materials,rigged}=req.body;
+    const {assetName,assetID,price,description,quads,totaltriangles,vertices,materials,rigged}=req.body;
     const categoryId=req.params.categoryId;
     const assetCategory=await Category.findById(categoryId);
 if(!assetCategory){
@@ -32,6 +32,7 @@ const files =  uploadedFiles.map((file) => ({
  
 const asset = new Asset({
   assetName,
+  assetID,
   price,
   description,
   quads,
@@ -141,7 +142,7 @@ console.log(categoryId);
     // }
     try {
       const { assetId } = req.params;
-      const { assetName, price, description, categoryId, files } = req.body;
+      const { assetName,assetID, price, description, categoryId, files } = req.body;
   
       if (!mongoose.Types.ObjectId.isValid(assetId)) {
         return res.status(400).json({ error: 'Invalid asset ID' });
@@ -154,6 +155,9 @@ console.log(categoryId);
   
       if (assetName) {
         asset.assetName = assetName;
+      }
+      if(assetID){
+        asset.assetID = assetID;
       }
       if (price) {
         asset.price = price;

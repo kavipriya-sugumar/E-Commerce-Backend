@@ -2,6 +2,7 @@ import Category from "../models/category.model.js";
 import { errorHandler } from "../utils/error.js";
 import multer from "multer";
 import multerS3 from "multer-s3";
+import mongoose from "mongoose";
 import { deleteFileFromS3, generateS3FileUrl, s3 } from "../utils/s3UploadClient.js";
  
  
@@ -191,7 +192,7 @@ export const updateCategory = async (req, res, next) => {
  
 // Get single category
 export const getCategoryById = async(req,res,next)=>{
-  const category = await Category.findById(req.params.id);
+  const category = await Category.findById({_id: new mongoose.Types.ObjectId(req.params.id)});
   if(!category){
     res.status(500).json({message: 'Category with the given id was not exist'});
   }

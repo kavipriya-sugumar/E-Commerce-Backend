@@ -5,9 +5,9 @@ import multers3 from "multer-s3";
  
  
 AWS.config.update({
-    accessKeyId: process.env.STORAGE_ACCESS_KEY_ID,
-    secretAccessKey: process.env.STORAGE_SECRET_ACCESS_KEY,
-    region: process.env.STORAGE_REGION });
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION });
  
  export const s3= new AWS.S3();
  
@@ -25,7 +25,7 @@ AWS.config.update({
   export const uploadFiles=upload.array('inputFile', 3);
  
   export const generateS3FileUrl = (key) => {
-    return `https://khan-carlmart.s3.${process.env.STORAGE_REGION}.amazonaws.com/${key}`;
+    return `https://khan-carlmart.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
   };
  
  

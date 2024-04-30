@@ -3,7 +3,7 @@ import Category from './category.model.js';
  
 const assetSchema = new mongoose.Schema({
   assetName: { type: String, required: true },
-  assetId:{type:Number, required:true},
+  assetID:{type:Number, required:true},
   price: { type: String, required: true },
   description: { type: String, required: true },  
   quads:{type: Number, required:true},
