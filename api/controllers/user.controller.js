@@ -12,15 +12,23 @@ export const test = (req, res) => {
 //delete account functionality
 
 export const deleteUser = async (req, res, next) => {
-  const findUser = await User.findOne({_id : req?.user?._id})
-  if(findUser){
-   const userDelete = await User.deleteOne({_id:new mongoose.Types.ObjectId(findUser?._id)})
-   if(userDelete){
-     return res.json({status:200, message:"account has been deleted"})
-   }else{
-     return res.json({status:406, message:"account deleted failed"})
-   }
+// return res.json(1232)
+  try {
+    // console.log("id", req?.user?._id)
+    const findUser = await User.findOne({_id : req?.user?._id})
+    if(findUser){
+     const userDelete = await User.deleteOne({_id:new mongoose.Types.ObjectId(findUser?._id)})
+     if(userDelete){
+       return res.json({status:200, message:"account has been deleted"})
+     }else{
+       return res.json({status:406, message:"account deleted failed"})
+     }
+    }
+    
+  } catch (err) {
+    return res.json({message:err.message})
   }
+ 
  };
 
 
@@ -39,6 +47,7 @@ export const logout = (req, res, next) => {
 //get particular user
 export const getParticularUser = async(req, res)=>{
   try {
+  
     const findUser = await User.findOne({_id : req?.query?.id, verifiedEmail : true, })
   if(!findUser) return res.json({status:406, message:"invaild user id"})
   return res.status(200).json({status:200, message:{

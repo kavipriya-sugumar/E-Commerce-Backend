@@ -13,7 +13,7 @@ export const createAsset = async (req, res, next) => {
   try {
 if (!req.files) res.status(400).json({ error: 'No files were uploaded.' })
     const uploadedFiles=req.files;
-    const {assetName,assetID,price,description,quads,totaltriangles,vertices,materials,rigged}=req.body;
+    const {assetName,assetID,price,description,quads,totaltriangles,vertices,materials,rigged,fileFormats}=req.body;
     const categoryId=req.params.categoryId;
     const assetCategory=await Category.findById(categoryId);
 if(!assetCategory){
@@ -41,6 +41,7 @@ const asset = new Asset({
   vertices,
   materials,
   rigged,
+  fileFormats,
   category:assetCategory,
   files
 })
@@ -143,7 +144,7 @@ console.log(categoryId);
     // }
     try {
       const { assetId } = req.params;
-      const { assetName,assetID, price, description, categoryId, files } = req.body;
+      const { assetName,assetID,price,description,quads,totaltriangles,vertices,categoryId,materials,rigged,fileFormats } = req.body;
   
       if (!mongoose.Types.ObjectId.isValid(assetId)) {
         return res.status(400).json({ error: 'Invalid asset ID' });
@@ -165,6 +166,24 @@ console.log(categoryId);
       }
       if (description) {
         asset.description = description;
+      }
+      if (description) {
+        asset.quads = quads;
+      }
+      if (description) {
+        asset.totaltriangles = totaltriangles;
+      }
+      if (description) {
+        asset.vertices = vertices;
+      }
+      if (description) {
+        asset.materials = materials;
+      }
+      if (description) {
+        asset.rigged = rigged;
+      }
+      if (description) {
+        asset.fileFormats = fileFormats;
       }
       if (categoryId) {
         const category = await Category.findById(categoryId);

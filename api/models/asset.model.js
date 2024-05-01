@@ -11,6 +11,8 @@ const assetSchema = new mongoose.Schema({
   vertices: {type: Number,required:true},
   materials: {type: Number,required:true},
   rigged: {type:Boolean,required:true},
+  fileFormats: {type:Array, required: true},
+  
   category:{type: mongoose.Schema.Types.ObjectId,
     ref:Category ,
     required: true, },

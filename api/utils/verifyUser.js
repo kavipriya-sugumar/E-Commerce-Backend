@@ -23,6 +23,7 @@ export const verifyUser = async(req,res,next)=>{
   if (!token) return res.json(401, "invaild token");
   const decoded = jwt.decode(token, process.env.JWT_SECRET)
   const findUser = await User.findOne({_id : decoded?.id})
+  req.user = findUser
   if(!findUser) return res.json({status:406, message:"invaild user"})
     next()
 
@@ -38,6 +39,7 @@ export const verifyTokenAndAdmin = async(req, res, next) => {
   const decoded = jwt.decode(token, process.env.JWT_SECRET)
   console.log(decoded)
   const findUser = await User.findOne({_id : decoded?.id, isAdmin : true})
+  req.user = findUser
   if(!findUser) return res.json({status:406, message:"invaild user"})
   next()
 };
