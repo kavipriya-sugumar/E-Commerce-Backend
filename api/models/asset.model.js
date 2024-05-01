@@ -10,7 +10,7 @@ const assetSchema = new mongoose.Schema({
  totaltriangles:{type:Number, required:true},
   vertices: {type: Number,required:true},
   materials: {type: Number,required:true},
-  rigged: {type:Boolean,required:true},
+  rigged: {type:String,required:true},
   fileFormats: {type:Array, required: true},
   
   category:{type: mongoose.Schema.Types.ObjectId,

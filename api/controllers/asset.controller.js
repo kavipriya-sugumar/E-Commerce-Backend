@@ -120,8 +120,8 @@ const params = {
 //get Assets by Category 
 export const assetsByCategory=async(req,res,next)=>{
   try {
-    const { categoryId } = req.params;
-console.log(categoryId);
+    const  categoryId = req?.query?.id;
+// console.log(categoryId);
     if (!mongoose.Types.ObjectId.isValid(categoryId)) {
       return res.status(400).json({ error: 'Invalid category ID' });
     }
@@ -234,12 +234,34 @@ console.log(categoryId);
     }
   };
 
-export const getAssetsById = async (req, res, next) => {
-  const assets = await Asset.findById(req.params.id)
-  if (!assets) {
-    res.status(500).json({ success: false });
+
+
+
+
+// export const getAssetsById = async (req, res, next) => {
+//   const assets = await Asset.findById(req.params.id)
+//   if (!assets) {
+//     res.status(500).json({ success: false });
+//   }
+//   res.send(assets);
+// };
+
+
+export const getAssetsById=async(req,res,next)=>{
+  try {
+    const  assetsId = req?.query?.id;
+console.log(assetsId);
+    if (!mongoose.Types.ObjectId.isValid(assetsId)) {
+      return res.status(400).json({ error: 'Invalid asset ID' });
+    }
+
+    const asset = await Asset.findById(assetsId);
+
+    res.status(200).json({ asset });
+  } catch (error) {
+    console.error('Error fetching assets by category:', error);
+    next (errorHandler(error));
   }
-  res.send(assets);
 };
 
 
