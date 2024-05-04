@@ -22,7 +22,7 @@ AWS.config.update({
     })
   })
  
-  export const uploadFiles=upload.array('inputFile', 3);
+  export const uploadFiles=upload.array('files', 5);
  
   export const generateS3FileUrl = (key) => {
     return `https://khan-carlmart.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;

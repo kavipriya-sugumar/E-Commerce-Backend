@@ -6,7 +6,7 @@ const wishlistSchema = new mongoose.Schema(
         type: String,
         required: true,
     },
-    productsId: {
+    productId: {
         type: String,
         ref: "Assets",
       },
