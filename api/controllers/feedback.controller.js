@@ -19,7 +19,7 @@ auth:{
  
 let mailOptions={
     from:`${email}`,
-    to:"kavipriya2912002@gmail.com",
+    to:"priyakavi805@gmail.com",
     subject:"Got a feedback from "+name,
  
     html:`<h2>Got a message</h2>
