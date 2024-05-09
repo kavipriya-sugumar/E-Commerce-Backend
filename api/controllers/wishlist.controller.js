@@ -44,6 +44,7 @@ export const getLikeProducts = async(req, res) => {
  
  
 export const getParticularLikeProducts = async(req, res)=>{
+    console.log(req.query);
     if(!req?.query?.id) return res.json({status:406, message:"id required"})
     const verifyUser = await User.findOne({_id: new mongoose.Types.ObjectId(req?.query?.id)})
     if(!verifyUser) return res.json({status:406, message:"invaild user"})

@@ -28,10 +28,10 @@ export const createCart = async (req, res) => {
     }
  
     const cartDetails = await Asset.find({_id:new mongoose.Types.ObjectId(req?.body?.productId)})
-    if (cartDetails.length > 0) {
+    if (newCart) {
       return res.status(200).json({
         message: "Cart created successfully",
-        cartDetails
+        findProducts
       });
     } else {
       return res.status(406).json({ message: "Cart details fetch failed" });

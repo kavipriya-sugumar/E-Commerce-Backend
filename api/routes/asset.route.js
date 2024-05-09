@@ -6,7 +6,7 @@ import { uploadFiles } from "../utils/s3UploadClient.js";
 const router = express.Router();
 
 router.post("/createAsset/:categoryId",verifyTokenAndAdmin,uploadFiles, createAsset);
-router.get("/getAssets",getAssetsById);
+router.get("/getAssets/:assetId",getAssetsById);
 router.delete("/deleteasset/:assetId",verifyTokenAndAdmin, deleteFiles);
 router.get("/getByCategory/:id",assetsByCategory)
 router.get("/getAllAssets", getAllAssets);
