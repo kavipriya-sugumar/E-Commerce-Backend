@@ -7,17 +7,17 @@ import wishList from "../models/wishlist.model.js";
  
 export const likeProductToWishList = async (req, res) => {
     try {
-        console.log(req?.body);
-       if(req?.body?.isLike === constantValue.LIKE){
+       if(req?.body?.isLike == constantValue.LIKE){
+        const findLike = await wishList.findOne(req?.body)
+        if(findLike) return res.json({message:"alredy liked"})
             const createWishList = await wishList.create(req?.body)
             if(createWishList){
-                console.log("success")
                 return res.status(200).json({messsage:"whisList Created"})
-                
+               
             }else{
                 return res.status(406).json({message:"createWishList failed"})
             }
-        }else if(req?.body?.isLike === constantValue.UNLIKE){
+        }else if(req?.body?.isLike == constantValue.UNLIKE){
             const removeWishList = await wishList.deleteOne({productId:req?.body?.productId, userId:req?.body?.userId})
             if(removeWishList){
                 return res.json({message:"whishList Removed"})
@@ -30,7 +30,6 @@ export const likeProductToWishList = async (req, res) => {
         return res.status(500).json({ status: 500, message: err.message });
     }
 }
-
 
 export const getLikeProducts = async(req, res) => {
  

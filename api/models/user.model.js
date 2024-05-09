@@ -75,7 +75,6 @@ const userSchema = new mongoose.Schema(
 //     remarks: String
 // }],
   },
-  { timestamps: true }
 );
 
 const User = mongoose.model("User", userSchema);

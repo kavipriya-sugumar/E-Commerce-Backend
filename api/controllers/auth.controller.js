@@ -21,6 +21,8 @@ export const getOtp = async (req, res) => {
     const currentTime = new Date();
     const futureTime = new Date(currentTime.getTime() + 1 * 60000);
     const expiredTime = futureTime.toLocaleTimeString()
+    console.log("expired",expiredTime);
+    console.log("curree",currentTime);
     // time management end
       let sendEmailOtp = await sendEmail(req.body?.email, otp);
       if(sendEmail){
@@ -33,6 +35,7 @@ export const getOtp = async (req, res) => {
             return res.json({status: 406, message: "OTP creation failed"})
           }
         }
+        console.log("expired time",expiredTime);
         const createOtp = await Otp.create({email:req?.body?.email, otp:otp,createdTime:localTime, expiredTime:expiredTime})
         if(createOtp){
           res.json({ status: 200, message: "OTP sent successfully" });
@@ -62,7 +65,7 @@ if(checkUser) return res.json({status:406, message:"this email id already have a
 let verifyOtp = await Otp.findOne({email:req?.body?.email, otp:req?.body?.otp})
 const currentTime = new Date().toLocaleTimeString('en-IN', {
   timeZone: 'Asia/Kolkata'
-});
+});console.log("current time",currentTime);
  
 if(currentTime > verifyOtp?.expiredTime) return res.json({status:200, message:"time verification time up please wait 5 minutes after resend otp"})
  
