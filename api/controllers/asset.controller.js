@@ -225,14 +225,21 @@ export const assetsByCategory=async(req,res,next)=>{
     }
   };
 
-export const getAssetsById = async (req, res, next) => {
-  const assets = await Asset.findById(req.params.id)
-  if (!assets) {
-    res.status(500).json({ success: false });
-  }
-  res.send(assets);
-};
-
+  export const getAssetsById = async (req, res, next) => {
+    try {
+      const { assetId } = req.params;
+      const asset = await Asset.findById(assetId);
+     
+      if (!asset) {
+        return res.status(404).json({ message: 'Asset not found' });
+      }
+ 
+      res.status(200).json({ asset });
+    } catch (error) {
+      console.error('Error fetching asset by ID:', error);
+      next(error);
+    }
+  };
 
 
 
