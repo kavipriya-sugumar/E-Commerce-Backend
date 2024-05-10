@@ -1,5 +1,4 @@
 import Asset from "../models/asset.model.js";
-import User from "../models/user.model.js";
 import mongoose from "mongoose";
 import constantValue from "../utils/const.js";
 import wishList from "../models/wishlist.model.js";
