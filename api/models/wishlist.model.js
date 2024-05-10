@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
- 
+import Asset from "./asset.model.js";
 const wishlistSchema = new mongoose.Schema(
   {
     userId: {
@@ -7,8 +7,8 @@ const wishlistSchema = new mongoose.Schema(
         required: true,
     },
     productId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Assets",
+        type: String,
+        ref: 'Asset',
       },
     isLike:{
       type:Boolean,
@@ -16,7 +16,6 @@ const wishlistSchema = new mongoose.Schema(
      
     },
   },
-  { timestamps: true }
 );
  
 const wishList = mongoose.model("wishlist", wishlistSchema);

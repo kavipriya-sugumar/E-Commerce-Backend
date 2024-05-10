@@ -59,12 +59,13 @@ try {
 //get user cart
 
 export const getUserCart= async (req,res,next)=>{
-    try {
-        const cart = await Cart.find({ userId: req.params.userId });
-        return res.status(200).json(cart);
-      } catch (err) {
-        returnres.status(500).json(err);
-      }
+  try {
+      const cart = await Cart.find({ userId: req.query.userId }).populate('productId').exec();
+      return res.status(200).json(cart);
+      
+    } catch (err) {
+      returnres.status(500).json(err);
+    }
 }
 
 //delete particular item from cart
