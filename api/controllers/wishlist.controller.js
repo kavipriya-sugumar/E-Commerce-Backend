@@ -43,15 +43,21 @@ export const getLikeProducts = async(req, res) => {
 }
  
  
-export const getParticularLikeProducts = async(req, res)=>{
-    console.log(req.query);
-    if(!req?.query?.id) return res.json({status:406, message:"id required"})
-    const verifyUser = await User.findOne({_id: new mongoose.Types.ObjectId(req?.query?.id)})
-    if(!verifyUser) return res.json({status:406, message:"invaild user"})
-    const getParticularLikeProducts = await wishList.find({userId:verifyUser?._id, isLike:true})
-    if(getParticularLikeProducts){
-        return res.json({status:200, message:getParticularLikeProducts})
-    }else{
-        return res.json({status:406, message:"something went wrong"})
+export const getParticularLikeProducts = async (req, res) => {
+    if (!req.query.id) {
+        return res.status(406).json({ message: "ID required" });
     }
-}
+ 
+    try {
+        const likedProducts = await wishList.find({ userId: req.query.id, isLike: true }).populate('productId').exec();
+ 
+        if (likedProducts && likedProducts.length > 0) {
+            return res.json(likedProducts);
+        } else {
+            return res.status(404).json({ message: "No liked products found" });
+        }
+    } catch (error) {
+        console.error('Error fetching liked products:', error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
