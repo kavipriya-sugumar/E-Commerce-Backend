@@ -11,7 +11,7 @@ import cartRoutes from "./routes/cart.route.js";
 import orderRoutes from "./routes/orders.routes.js";
 import wishlistRoutes from "./routes/wishlist.route.js";
 import feedbackRoutes from "./routes/feedback.route.js";
-// import paymentRoutes from "./routes/payment.route.js"
+import paymentRoutes from "./routes/payment.route.js"
 
 dotenv.config();
 
@@ -28,6 +28,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+// app.use(express.urlencoded({extended: false}));
 app.use(cookieParser());
 
 app.get("/", (req, res) => {
@@ -45,7 +46,7 @@ app.use("/api/asset", assetRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist",wishlistRoutes);
 app.use("/api/orders",orderRoutes);
-// app.use("/api/payment",paymentRoutes)
+app.use("/api/payment",paymentRoutes)
 app.use("/api/feedback",feedbackRoutes);
 
 //middleware to handle and display errors
