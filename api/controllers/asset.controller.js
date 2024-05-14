@@ -3,11 +3,11 @@ import Asset from "../models/asset.model.js"
 import Category from "../models/category.model.js";
 import { bytesToSize, convertToBytes } from "../utils/bytesToSize.js";
 import { errorHandler } from "../utils/error.js";
-import { generateS3FileUrl, s3 } from "../utils/s3UploadClient.js";
+import { deleteFileFromS3, generateS3FileUrl, s3, uploadFiles } from "../utils/s3UploadClient.js";
 import { getFileExtension } from "../utils/fileExtension.js";
-
-
-
+ 
+ 
+ 
 // Create a Single Asset
 export const createAsset = async (req, res, next) => {
   try {
@@ -21,12 +21,12 @@ if(!assetCategory){
 }
 console.log(uploadedFiles);
 let totalSizeBytes = 0;
-
-
+ 
+ 
 const files =  uploadedFiles.map((file) => {
   const fileSizeBytes = file.size;
   totalSizeBytes += fileSizeBytes;
-
+ 
 return{
   name: file.originalname,
   type: file.mimetype,
@@ -75,12 +75,12 @@ res.status(201).json({
    
   }
 };
-
-
-
-
-
-
+ 
+ 
+ 
+ 
+ 
+ 
 // Get All Assets
 export const getAllAssets = async (req, res, next) => {
   try {
@@ -91,140 +91,118 @@ export const getAllAssets = async (req, res, next) => {
     next(errorHandler(error));
   }
 };
-
-
-
-
-
-
-
+ 
+ 
+ 
+ 
+ 
+ 
+ 
 // Delete Asset
-export const deleteFiles = async (req, res, next) => {
+export const deleteAsset = async (req, res, next) => {
   try {
-const assetId=req.params.assetId;
-const asset=await Asset.findById(assetId)
-if (!asset) {
-  throw new Error('Asset not found');
-}
-
-const fileKeys = asset.files.map((file) => file.key);
-
-const params = {
-      Bucket: `${process.env.AWS_BUCKET}`, 
-      Delete: {
-        Objects: fileKeys.map((key) => ({ Key: key })),
-        Quiet: true 
-      }
-    };
-
-    const data = await s3.deleteObjects(params).promise();
-    await Asset.findByIdAndDelete(req.params.assetId)
-
-    res.status(200).json({ message: 'Files deleted successfully', deleted: data.Deleted });
+    const { assetId } = req.params;
+ 
+    const asset = await Asset.findById(assetId);
+    if (!asset) {
+      return res.status(404).json({ message: 'Asset not found' });
+    }
+ 
+    await Promise.all(asset.files.map(async (file) => {
+      await deleteFileFromS3(file.key); // Implement deleteFileFromStorage function according to your storage mechanism
+    }));
+ 
+    await Asset.findByIdAndDelete(assetId);
+ 
+    res.status(200).json({ message: 'Asset deleted successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to delete files' });
+    console.error('Error deleting asset:', error);
+    next(error);
   }
 };
-
-
-//get Assets by Category 
+ 
+ 
+//get Assets by Category
 export const assetsByCategory=async(req,res,next)=>{
   try {
     const categoryId  = req.params.id;
     if (!mongoose.Types.ObjectId.isValid(categoryId)) {
       return res.status(400).json({ error: 'Invalid category ID' });
     }
-
+ 
     const assets = await Asset.find({ category: categoryId }).populate('category');
-
+ 
     res.status(200).json({ assets });
   } catch (error) {
     console.error('Error fetching assets by category:', error);
     next (errorHandler(error));
   }
 };
-
-
-
+ 
+ 
+ 
+ 
 //update assets  
-  export const updateAsset = async (req, res, next) => {
-    // if (!req.user.isAdmin || req.user._id != req.params.userId) {
-    //   return next(errorHandler(403, "You are not allowed to edit this post"));
-    // }
-    try {
-      const { assetId } = req.params;
-      const { assetName,assetID, price, description, categoryId, files } = req.body;
-  
-      if (!mongoose.Types.ObjectId.isValid(assetId)) {
-        return res.status(400).json({ error: 'Invalid asset ID' });
-      }
-  
-      const asset = await Asset.findById(assetId);
-      if (!asset) {
-        return res.status(404).json({ error: 'Asset not found' });
-      }
-  
-      if (assetName) {
-        asset.assetName = assetName;
-      }
-      if(assetID){
-        asset.assetID = assetID;
-      }
-      if (price) {
-        asset.price = price;
-      }
-      if (description) {
-        asset.description = description;
-      }
-      if (categoryId) {
-        const category = await Category.findById(categoryId);
-        if (!category) {
-          return res.status(404).json({ error: 'Category not found' });
-        }
-        asset.category = category;
-      }
-  
-      // Handle file updates in S3
-      if (files && Array.isArray(files) && files.length > 0) {
-        const updatedFiles = [];
-  
-        for (const file of files) {
-          const { name, type, data } = file;
-  
-          const params = {
-            Bucket: `${process.env.AWS_BUCKET}`,
-            Key: `${assetId}/${name}`, // Use a unique key per asset (e.g., assetId/filename)
-            Body: data
-          };
-  
-          const uploadedFile = await s3.upload(params).promise();
-  
-          const fileUrl = generateS3FileUrl(uploadedFile.Key);
-  
-          const updatedFileMetadata = {
-            name,
-            type,
-            size: bytesToSize(data.length), // Assuming 'data' is a Buffer or Uint8Array
-            format: getFileExtension(name),
-            url: fileUrl,
-            key: uploadedFile.Key
-          };
-  
-          updatedFiles.push(updatedFileMetadata);
-        }
-  
-        asset.files = updatedFiles;
-      }
-  
-      const updatedAsset = await asset.save();
-  
-      res.status(200).json({ message: 'Asset updated successfully', asset: updatedAsset });
-    } catch (error) {
-      console.error('Error updating asset:', error);
-      next(errorHandler(error));
+export const updateAsset = async (req, res, next) => {
+  try {
+    
+    const { assetId } = req.params;
+    console.log(assetId);
+    const { assetName, assetID, price, description, quads, totalTriangles, vertices, materials, rigged, fileFormats } = req.body;
+    const categoryId = req.params.categoryId;
+ 
+    const existingAsset = await Asset.findById(assetId);
+    if (!existingAsset) {
+      return res.status(404).json({ message: "Asset not found" });
     }
-  };
-
+ 
+    await Promise.all(existingAsset.files.map(async (file) => {
+      await deleteFileFromS3(file.key); // Implement deleteFileFromS3 function according to your storage mechanism
+    }));
+ 
+    let totalSizeBytes = 0;
+    const files = req.files.map((file) => {
+      const fileSizeBytes = file.size;
+      totalSizeBytes += fileSizeBytes;
+      return {
+        name: file.originalname,
+        type: file.mimetype,
+        size: bytesToSize(file.size),
+        format: getFileExtension(file.originalname),
+        url: generateS3FileUrl(file.key),
+        key: file.key
+      };
+    });
+ 
+    existingAsset.assetName = assetName;
+    existingAsset.assetID = assetID;
+    existingAsset.price = price;
+    existingAsset.description = description;
+    existingAsset.quads = quads;
+    existingAsset.totalTriangles = totalTriangles;
+    existingAsset.vertices = vertices;
+    existingAsset.materials = materials;
+    existingAsset.rigged = rigged;
+    existingAsset.fileFormats = fileFormats;
+    existingAsset.category = categoryId;
+    existingAsset.files = files;
+    existingAsset.totalFileSize = bytesToSize(totalSizeBytes);
+ 
+    const updatedAsset = await existingAsset.save();
+ 
+    res.status(200).json({
+      message: 'Asset updated successfully',
+      asset: updatedAsset
+    });
+  } catch (error) {
+    console.error('Error updating asset:', error);
+    // Pass error to error handler middleware
+    next(error);
+  }
+};
+ 
+ 
+ 
   export const getAssetsById = async (req, res, next) => {
     try {
       const { assetId } = req.params;
@@ -240,281 +218,37 @@ export const assetsByCategory=async(req,res,next)=>{
       next(error);
     }
   };
-
-
-
-
-// import mongoose from "mongoose";
-// import Asset from "../models/asset.model.js"
-// import Category from "../models/category.model.js";
-// import { bytesToSize } from "../utils/bytesToSize.js";
-// import { errorHandler } from "../utils/error.js";
-// import { generateS3FileUrl, s3 } from "../utils/s3UploadClient.js";
-// import { getFileExtension } from "../utils/fileExtension.js";
-
-
-
-// // Create a Single Asset
-// export const createAsset = async (req, res, next) => {
-//   try {
-// if (!req.files) res.status(400).json({ error: 'No files were uploaded.' })
-//     const uploadedFiles=req.files;
-//     const {assetName,assetID,price,description,quads,totaltriangles,vertices,materials,rigged,fileFormats}=req.body;
-//     const categoryId=req.params.categoryId;
-//     const assetCategory=await Category.findById(categoryId);
-// if(!assetCategory){
-//   res.status(404).json({message:"Category not found"})
-// }
-// console.log(uploadedFiles);
-// const files =  uploadedFiles.map((file) => ({
-//   name: file.originalname,
-//   type: file.mimetype,
-//   size: bytesToSize(file.size),
-//   format: getFileExtension(file.originalname),
-//   url:generateS3FileUrl(file.key),
-//   key:file.key
  
  
-// }));
  
-// const asset = new Asset({
-//   assetName,
-//   assetID,
-//   price,
-//   description,
-//   quads,
-//   totaltriangles,
-//   vertices,
-//   materials,
-//   rigged,
-//   fileFormats,
-//   category:assetCategory,
-//   files
-// })
+  // Asset Download
+  export const downloadAsset=async(req,res)=>{
+    try{
+const {assetId,fileIndex}=req.params;
+const asset=await Asset.findById(assetId);
+if(!asset){
+  return res.status(404).json({message:"Asset not found"});
+}
  
-// const createdAssets = await Asset.insertMany(asset);
+if(fileIndex<0||fileIndex>=asset.files.length){
+  return res.status(400).json({message:"Invalid file Index"
+  });
+}
  
-// res.status(201).json({
-//     message: 'Successfully uploaded ' + req.files.length + ' files!',
-//     files: req.files
-//   })
-// }
+const file=asset.files[fileIndex];
  
-//   catch (error) {
-//       console.error('Error creating assets:', error);
+const params={
+  Bucket:process.env.WASABI_REGION,
+  Key:file.key,
+  Expires:500,
+};
  
-//       if (error.name === 'ValidationError') {
-//         return res.status(400).json({ error: 'Validation error. Please check your input data.' });
-//       }
+const url = await s3.getSignedUrlPromise('getObject', params);
+console.log(url);
+res.redirect(url);
+  }catch(error){
+    console.log(error);
+    res.status(500).json({error:"failed to serve asset File"});
+  }
  
-//       next(errorHandler(error));
-   
-//   }
-// };
-
-
-
-
-
-
-// // Get All Assets
-// export const getAllAssets = async (req, res, next) => {
-//   try {
-//     const assets = await Asset.find();
-//     res.status(200).json({ assets });
-//   } catch (error) {
-//     console.error('Error fetching assets:', error);
-//     next(errorHandler(error));
-//   }
-// };
-
-
-
-
-
-
-
-// // Delete Asset
-// export const deleteFiles = async (req, res, next) => {
-//   try {
-// const assetId=req.params.assetId;
-// const asset=await Asset.findById(assetId)
-// if (!asset) {
-//   throw new Error('Asset not found');
-// }
-
-// const fileKeys = asset.files.map((file) => file.key);
-
-// const params = {
-//       Bucket: `${process.env.AWS_BUCKET}`, 
-//       Delete: {
-//         Objects: fileKeys.map((key) => ({ Key: key })),
-//         Quiet: true 
-//       }
-//     };
-
-//     const data = await s3.deleteObjects(params).promise();
-//     await Asset.findByIdAndDelete(req.params.assetId)
-
-//     res.status(200).json({ message: 'Files deleted successfully', deleted: data.Deleted });
-//   } catch (error) {
-//     res.status(500).json({ error: 'Failed to delete files' });
-//   }
-// };
-
-
-// //get Assets by Category 
-// export const assetsByCategory=async(req,res,next)=>{
-//   try {
-//     const  categoryId = req?.query?.id;
-// // console.log(categoryId);
-//     if (!mongoose.Types.ObjectId.isValid(categoryId)) {
-//       return res.status(400).json({ error: 'Invalid category ID' });
-//     }
-
-//     const assets = await Asset.find({ category: categoryId }).populate('category');
-
-//     res.status(200).json({ assets });
-//   } catch (error) {
-//     console.error('Error fetching assets by category:', error);
-//     next (errorHandler(error));
-//   }
-// };
-
-
-
-// //update assets  
-//   export const updateAsset = async (req, res, next) => {
-//     // if (!req.user.isAdmin || req.user._id != req.params.userId) {
-//     //   return next(errorHandler(403, "You are not allowed to edit this post"));
-//     // }
-//     try {
-//       const { assetId } = req.params;
-//       const { assetName,assetID,price,description,quads,totaltriangles,vertices,categoryId,materials,rigged,fileFormats } = req.body;
-  
-//       if (!mongoose.Types.ObjectId.isValid(assetId)) {
-//         return res.status(400).json({ error: 'Invalid asset ID' });
-//       }
-  
-//       const asset = await Asset.findById(assetId);
-//       if (!asset) {
-//         return res.status(404).json({ error: 'Asset not found' });
-//       }
-  
-//       if (assetName) {
-//         asset.assetName = assetName;
-//       }
-//       if(assetID){
-//         asset.assetID = assetID;
-//       }
-//       if (price) {
-//         asset.price = price;
-//       }
-//       if (description) {
-//         asset.description = description;
-//       }
-//       if (description) {
-//         asset.quads = quads;
-//       }
-//       if (description) {
-//         asset.totaltriangles = totaltriangles;
-//       }
-//       if (description) {
-//         asset.vertices = vertices;
-//       }
-//       if (description) {
-//         asset.materials = materials;
-//       }
-//       if (description) {
-//         asset.rigged = rigged;
-//       }
-//       if (description) {
-//         asset.fileFormats = fileFormats;
-//       }
-//       if (categoryId) {
-//         const category = await Category.findById(categoryId);
-//         if (!category) {
-//           return res.status(404).json({ error: 'Category not found' });
-//         }
-//         asset.category = category;
-//       }
-  
-//       // Handle file updates in S3
-//       if (files && Array.isArray(files) && files.length > 0) {
-//         const updatedFiles = [];
-  
-//         for (const file of files) {
-//           const { name, type, data } = file;
-  
-//           const params = {
-//             Bucket: `${process.env.AWS_BUCKET}`,
-//             Key: `${assetId}/${name}`, // Use a unique key per asset (e.g., assetId/filename)
-//             Body: data
-//           };
-  
-//           const uploadedFile = await s3.upload(params).promise();
-  
-//           const fileUrl = generateS3FileUrl(uploadedFile.Key);
-  
-//           const updatedFileMetadata = {
-//             name,
-//             type,
-//             size: bytesToSize(data.length), // Assuming 'data' is a Buffer or Uint8Array
-//             format: getFileExtension(name),
-//             url: fileUrl,
-//             key: uploadedFile.Key
-//           };
-  
-//           updatedFiles.push(updatedFileMetadata);
-//         }
-  
-//         asset.files = updatedFiles;
-//       }
-  
-//       const updatedAsset = await asset.save();
-  
-//       res.status(200).json({ message: 'Asset updated successfully', asset: updatedAsset });
-//     } catch (error) {
-//       console.error('Error updating asset:', error);
-//       next(errorHandler(error));
-//     }
-//   };
-
-
-
-
-
-// // export const getAssetsById = async (req, res, next) => {
-// //   const assets = await Asset.findById(req.params.id)
-// //   if (!assets) {
-// //     res.status(500).json({ success: false });
-// //   }
-// //   res.send(assets);
-// // };
-
-
-// export const getAssetsById=async(req,res,next)=>{
-//   try {
-//     const  assetsId = req?.query?.id;
-// console.log(assetsId);
-//     if (!mongoose.Types.ObjectId.isValid(assetsId)) {
-//       return res.status(400).json({ error: 'Invalid asset ID' });
-//     }
-
-//     const asset = await Asset.findById(assetsId);
-
-//     res.status(200).json({ asset });
-//   } catch (error) {
-//     console.error('Error fetching assets by category:', error);
-//     next (errorHandler(error));
-//   }
-// };
-
-
-
-
-
-
-
-
-
+  };

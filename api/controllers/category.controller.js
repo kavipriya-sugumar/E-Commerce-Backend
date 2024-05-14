@@ -12,7 +12,7 @@ import { deleteFileFromS3, generateS3FileUrl, s3 } from "../utils/s3UploadClient
 const upload = multer({
   storage: multerS3({
     s3: s3,
-    bucket: 'khan-carlmart',
+    bucket: process.env.WASABI_BUCKET,
     key: function (req, file, cb) {
       const folderName = 'CategoryImages';
       const filename = `${folderName}/${Date.now().toString() + '-' + file.originalname}`;
