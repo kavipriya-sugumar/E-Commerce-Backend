@@ -1,6 +1,9 @@
 import Razorpay from 'razorpay';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import Payment from '../models/payment.model.js';
+import User from '../models/user.model.js';
+import mongoose from 'mongoose';
 
 dotenv.config();
 
@@ -28,6 +31,7 @@ export const RazorOrder=async (req,res)=>{
 
 
 export const RazorValidate = async (req, res) => {
+    console.log(req.body);
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
     
     // Constructing the message
@@ -53,4 +57,40 @@ export const RazorValidate = async (req, res) => {
         orderId: razorpay_order_id,
         paymentId: razorpay_payment_id
     });
+
+    const userDetails = await User.findOne({_id:req?.body?.userId})
+    if(!userDetails) console.log("userId not found")
+        const Time = new Date().toLocaleTimeString('en-IN', {
+            timeZone: 'Asia/Kolkata'
+          });
+          const currentDate = new Date()
+     
+        const createPaymentDetails = await Payment.create({userDetails: {
+            userId : userDetails?._id,
+            userName: userDetails?.name,
+            email: userDetails?.email,
+            phone: userDetails?.phone
+        },
+        createdTime : Time,
+        date : currentDate,
+        ...req?.body})
+        if(createPaymentDetails){
+            console.log("payment details store succesfully")
+        }
+}
+
+
+export const getAllPaymentDetails = async(req, res)=>{
+    const paymentDetails = await Payment.find({})
+    console.log(paymentDetails);
+    if(!paymentDetails) return res.json({status:406, message:"payment Details Not found"})
+        return res.json({status:200, message:paymentDetails})
+}
+
+
+export const getParticularPurchaseHistory = async(req, res)=>{
+    const findHistory = await Payment.find({ "userDetails.userId": new mongoose.Types.ObjectId(req.query.userId )});
+ 
+    if(!findHistory) return res.json({status:406, message:"history not found"})
+        return res.json({status:200, message:findHistory})
 }

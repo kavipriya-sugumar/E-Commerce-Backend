@@ -1,15 +1,33 @@
+import { Timestamp } from "mongodb";
 import mongoose from "mongoose";
-
-const PaymentSchema = new mongoose.Schema(
-  {
-    razorpayDetails: {
-    orderId: String,
-    paymentId: String,
-    signature: String,
+ 
+const PaymentSchema = new mongoose.Schema({
+  userDetails:{
+    type:Object,
+    required:true
   },
-  success: Boolean,
+  usercart : {
+    type:Object,
+    required:true
+  },
+  razorpay_order_id:{
+    type:String,
+    required:true
+  },
+  razorpay_payment_id:{
+    type:String,
+    required:true
+  },
+  createdTime:{
+    type:String,
+    required:true
+  },
+  date:{
+    type:String,
+    required:true
   }
+}
 );
-
+ 
 const PaymentModel = mongoose.model("PaymentModel", PaymentSchema);
 export default PaymentModel;
