@@ -24,7 +24,18 @@ export const getOtp = async (req, res) => {
     console.log("expired",expiredTime);
     console.log("curree",currentTime);
     // time management end
-      let sendEmailOtp = await sendEmail(req.body?.email, otp);
+ 
+    let subject = `verify OTP`
+    let text = `To verify your email address, please use the following One Time Password (OTP):
+    ${otp}
+    Do not share this OTP with anyone. Digamend- takes your account security very seriously. Digamend Customer Service will never ask you to disclose or
+    verify your Digamend password, OTP, credit card, or banking account number. If you receive a suspicious
+    email with a link to update your account information, do not click on the link—instead, report the email to Digamend for investigation.
+    Thank you!`
+ 
+ 
+ 
+      let sendEmailOtp = await sendEmail(req.body?.email, otp, subject, text);
       if(sendEmail){
         let verifyOtp = await Otp.findOne({email:req?.body?.email})
         if(verifyOtp){

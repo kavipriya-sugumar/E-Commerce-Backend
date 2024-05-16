@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import Payment from '../models/payment.model.js';
 import User from '../models/user.model.js';
 import mongoose from 'mongoose';
+import sendEmail from '../utils/nodemailer.js';
 
 dotenv.config();
 
@@ -30,17 +31,18 @@ export const RazorOrder=async (req,res)=>{
 
 
 
+
 export const RazorValidate = async (req, res) => {
     console.log(req.body);
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-    
+
     // Constructing the message
     const message = `${razorpay_order_id}|${razorpay_payment_id}`;
-    
+
     // Generating signature
     const generated_signature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-                                      .update(message)
-                                      .digest('hex');
+        .update(message)
+        .digest('hex');
 
     // Logging
     console.log("Generated Signature:", generated_signature);
@@ -58,26 +60,60 @@ export const RazorValidate = async (req, res) => {
         paymentId: razorpay_payment_id
     });
 
-    const userDetails = await User.findOne({_id:req?.body?.userId})
-    if(!userDetails) console.log("userId not found")
-        const Time = new Date().toLocaleTimeString('en-IN', {
-            timeZone: 'Asia/Kolkata'
-          });
-          const currentDate = new Date()
-     
-        const createPaymentDetails = await Payment.create({userDetails: {
-            userId : userDetails?._id,
+    // Finding user details
+    const userDetails = await User.findOne({ _id: req?.body?.userId });
+    if (!userDetails) {
+        console.log("userId not found");
+    }
+
+    const Time = new Date().toLocaleTimeString('en-IN', {
+        timeZone: 'Asia/Kolkata'
+    });
+    const currentDate = new Date();
+
+    // Creating payment details
+    const createPaymentDetails = await Payment.create({
+        userDetails: {
+            userId: userDetails?._id,
             userName: userDetails?.name,
             email: userDetails?.email,
             phone: userDetails?.phone
         },
-        createdTime : Time,
-        date : currentDate,
-        ...req?.body})
-        if(createPaymentDetails){
-            console.log("payment details store succesfully")
-        }
+        createdTime: Time,
+        date: currentDate,
+        ...req?.body
+    });
+
+    // Mapping user cart
+    let assetDetails = req?.body?.usercart.map(each => ({
+        assetName: each?.productId?.assetName,
+        assetId: each?.productId?.assetId,
+        price: each?.productId?.price
+    }));
+
+    if (createPaymentDetails) {
+        console.log("Payment details stored successfully");
+    }
+
+    let assetName = [];
+    let assetId = [];
+    let price = [];
+    assetDetails.forEach(asset => {
+        assetName.push(asset.assetName);
+        assetId.push(asset.assetId);
+        price.push(asset.price);
+    });
+    // Sending email
+    const email = userDetails?.email
+    const subject = "Purchase Details"
+    const text = `orderId : ${razorpay_order_id}, paymentId : ${razorpay_payment_id} assetName : ${assetName.join(", ")}, price : ${price.join(", ")}`;
+
+    let sendEmailStatus = await sendEmail(email, subject, text);
+    if (!sendEmailStatus) {
+        console.log("Email sending failed");
+    }
 }
+
 
 
 export const getAllPaymentDetails = async(req, res)=>{
