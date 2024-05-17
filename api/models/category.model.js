@@ -6,18 +6,9 @@ const categorySchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    imageUrl: {
-      type: String,
-      required: true,
-    },
     imageKey:{
       type: String,
       required:true
-    },
- 
-    iconUrl:{
-      type: String,
-      required: true,
     },
     iconKey:{
       type: String,
