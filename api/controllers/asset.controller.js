@@ -284,7 +284,7 @@ export const getAssetsByCategory = async (req, res, next) => {
       if (imageFile) {
         const signedUrl = await getSignedUrl(imageFile.key);
         // Include files array only if an image file exists
-        return {
+        return {  
           ...asset.toObject(),
           imageUrl: signedUrl,
           files: undefined // Exclude files array from assets without image files

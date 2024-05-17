@@ -8,7 +8,7 @@ const router = express.Router();
 router.post("/createAsset/:categoryId", uploadFiles, createAsset);
 router.get("/getAssets/:assetId",getAssetById);
 router.delete("/deleteasset/:assetId", deleteAsset);
-router.get("/getByCategory/:id",getAssetsByCategory);
+router.get("/getByCategory/:categoryId",getAssetsByCategory);
 // router.get("/getAllAssets", getAllAssets);
 router.put("/updateAsset/:categoryId/:assetId", updateAsset);
 router.get("/:assetId/files/:fileIndex/download",downloadAsset);
