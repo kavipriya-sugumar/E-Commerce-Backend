@@ -3,7 +3,7 @@ import { errorHandler } from "../utils/error.js";
 import multer from "multer";
 import multerS3 from "multer-s3";
 import mongoose from "mongoose";
-import { deleteFileFromS3, generateS3FileUrl, s3 } from "../utils/s3UploadClient.js";
+import { deleteFileFromS3, generateS3FileUrl, getSignedUrl, s3 } from "../utils/s3UploadClient.js";
  
  
  
@@ -34,36 +34,35 @@ const upload = multer({
 // Create Category
 export const createCategory = async (req, res, next) => {
   try {
+   
+   
     upload.fields([{ name: 'image', maxCount: 1 }, { name: 'icon', maxCount: 1 }])(req, res, async function (error) {
       if (error) {
         console.error('Error uploading image:', error);
         return res.status(500).json({ error: 'Failed to upload image' });
       }
  
-      const { categoryName } = req.body;
- 
-      if (!categoryName) {
-        return res.status(400).json({ error: 'Category name is required.' });
-      }
- 
+      const  categoryName  = req.body.categoryName;
+      console.log(categoryName);
+         if (!categoryName) {
+           return res.status(400).json({ error: 'Category name is required.' });
+         }
       const imageFiles = req.files['image'];
       const iconFiles = req.files['icon'];
- 
+ console.log(imageFiles,iconFiles);
       if (!imageFiles || !iconFiles) {
         return res.status(400).json({ error: 'Both image and icon files are required.' });
       }
  
       const imageKey = imageFiles[0].key;
       const iconKey = iconFiles[0].key;
-      const imageUrl = generateS3FileUrl(imageKey);
-      const iconUrl = generateS3FileUrl(iconKey);
+     
  
       const newCategory = new Category({
         categoryName,
         imageKey,
-        iconKey,
-        imageUrl,
-        iconUrl
+        iconKey
+       
       });
  
       const savedCategory = await newCategory.save();
@@ -77,14 +76,33 @@ export const createCategory = async (req, res, next) => {
 };
  
 //Get all category
+ 
+// Get all categories
 export const getAllCategory = async (req, res, next) => {
   try {
-    const allCategory = await Category.find({});
-    res.status(200).json({allCategory})
+    const allCategories = await Category.find({});
+ 
+    const categoriesWithUrls = await Promise.all(
+      allCategories.map(async (category) => {
+        const imageUrl = await getSignedUrl(category.imageKey);
+        const iconUrl = await getSignedUrl(category.iconKey);
+        return {
+          _id: category._id,
+          categoryName: category.categoryName,
+          imageUrl,
+          iconUrl,
+          // include other category metadata here if there are any
+        };
+      })
+    );
+ 
+    res.status(200).json({ allCategories: categoriesWithUrls });
   } catch (error) {
-    next(error)
+    console.error('Error fetching categories:', error);
+    next(errorHandler(error));
   }
 };
+ 
  
  
  
@@ -92,8 +110,7 @@ export const getAllCategory = async (req, res, next) => {
  
 export const deleteCategory = async (req, res, next) => {
   try {
-    const categoryId = req.params.id;
-console.log(categoryId)
+    const {categoryId} = req.params;
     if (!categoryId) {
       return res.status(400).json({ error: 'Category ID is required.' });
     }
@@ -134,7 +151,8 @@ export const updateCategory = async (req, res, next) => {
         return res.status(500).json({ error: 'Failed to upload files' });
       }
  
-      const { categoryId, categoryName } = req.body;
+      const { categoryName } = req.body;
+      const {categoryId}=req.params;
  
       if (!categoryId || !categoryName) {
         return res.status(400).json({ error: 'Category ID and name are required.' });
@@ -149,13 +167,11 @@ export const updateCategory = async (req, res, next) => {
       if (req.files['image'] && category.imageKey) {
         await deleteFileFromS3(category.imageKey);
         category.imageKey = null;
-        category.imageUrl = null;
       }
  
       if (req.files['icon'] && category.iconKey) {
         await deleteFileFromS3(category.iconKey);
         category.iconKey = null;
-        category.iconUrl = null;
       }
  
       // Update category properties
@@ -164,17 +180,13 @@ export const updateCategory = async (req, res, next) => {
       // Check if new image file was uploaded
       if (req.files['image']) {
         const imageKey = req.files['image'][0].key;
-        const imageUrl = generateS3FileUrl(imageKey);
         category.imageKey = imageKey;
-        category.imageUrl = imageUrl;
       }
  
       // Check if new icon file was uploaded
       if (req.files['icon']) {
         const iconKey = req.files['icon'][0].key;
-        const iconUrl = generateS3FileUrl(iconKey);
         category.iconKey = iconKey;
-        category.iconUrl = iconUrl;
       }
  
       // Save the updated category
