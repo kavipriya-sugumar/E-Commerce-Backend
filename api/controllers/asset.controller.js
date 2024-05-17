@@ -3,12 +3,12 @@ import Asset from "../models/asset.model.js"
 import Category from "../models/category.model.js";
 import { bytesToSize, convertToBytes } from "../utils/bytesToSize.js";
 import { errorHandler } from "../utils/error.js";
-import { deleteFileFromS3, generateS3FileUrl, s3, uploadFiles } from "../utils/s3UploadClient.js";
+import { deleteFileFromS3, generateS3FileUrl, getSignedUrl, s3, uploadFiles } from "../utils/s3UploadClient.js";
 import { getFileExtension } from "../utils/fileExtension.js";
  
  
  
-// Create a Single Asset
+// Create asset
 export const createAsset = async (req, res, next) => {
   try {
 if (!req.files) res.status(400).json({ error: 'No files were uploaded.' })
@@ -20,6 +20,7 @@ if(!assetCategory){
   res.status(404).json({message:"Category not found"})
 }
 console.log(uploadedFiles);
+const folderName = `assets/${Date.now()}`;
 let totalSizeBytes = 0;
  
  
@@ -81,174 +82,264 @@ res.status(201).json({
  
  
  
-// Get All Assets
-export const getAllAssets = async (req, res, next) => {
-  try {
-    const assets = await Asset.find();
-    res.status(200).json({ assets });
-  } catch (error) {
-    console.error('Error fetching assets:', error);
-    next(errorHandler(error));
-  }
-};
- 
- 
- 
- 
- 
- 
- 
-// Delete Asset
-export const deleteAsset = async (req, res, next) => {
-  try {
-    const { assetId } = req.params;
- 
-    const asset = await Asset.findById(assetId);
-    if (!asset) {
-      return res.status(404).json({ message: 'Asset not found' });
-    }
- 
-    await Promise.all(asset.files.map(async (file) => {
-      await deleteFileFromS3(file.key); // Implement deleteFileFromStorage function according to your storage mechanism
-    }));
- 
-    await Asset.findByIdAndDelete(assetId);
- 
-    res.status(200).json({ message: 'Asset deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting asset:', error);
-    next(error);
-  }
-};
- 
- 
-//get Assets by Category
-export const assetsByCategory=async(req,res,next)=>{
-  try {
-    const categoryId  = req.params.id;
-    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
-      return res.status(400).json({ error: 'Invalid category ID' });
-    }
- 
-    const assets = await Asset.find({ category: categoryId }).populate('category');
- 
-    res.status(200).json({ assets });
-  } catch (error) {
-    console.error('Error fetching assets by category:', error);
-    next (errorHandler(error));
-  }
-};
- 
- 
- 
- 
-//update assets  
+// Update asset
 export const updateAsset = async (req, res, next) => {
   try {
-    
-    const { assetId } = req.params;
-    console.log(assetId);
-    const { assetName, assetID, price, description, quads, totalTriangles, vertices, materials, rigged, fileFormats } = req.body;
-    const categoryId = req.params.categoryId;
+    const { categoryId, assetId } = req.params;
  
+    // Check if the category exists
+    const assetCategory = await Category.findById(categoryId);
+    if (!assetCategory) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+ 
+    // Retrieve existing asset data from MongoDB
     const existingAsset = await Asset.findById(assetId);
     if (!existingAsset) {
       return res.status(404).json({ message: "Asset not found" });
     }
  
-    await Promise.all(existingAsset.files.map(async (file) => {
-      await deleteFileFromS3(file.key); // Implement deleteFileFromS3 function according to your storage mechanism
-    }));
+    // Delete existing files from the Wasabi bucket
+    for (const file of existingAsset.files) {
+      await deleteFileFromS3(file.key);
+    }
  
-    let totalSizeBytes = 0;
-    const files = req.files.map((file) => {
-      const fileSizeBytes = file.size;
-      totalSizeBytes += fileSizeBytes;
-      return {
+    // Upload new files to the Wasabi bucket
+    await uploadFiles(req, res, async (err) => {
+      if (err) {
+        console.error("Error uploading files:", err);
+        return res.status(500).json({ error: "Failed to upload files" });
+      }
+ 
+      const uploadedFiles = req.files || [];
+     
+      // Update asset metadata with new files information
+      const updatedFiles = uploadedFiles.map((file) => ({
         name: file.originalname,
         type: file.mimetype,
-        size: bytesToSize(file.size),
         format: getFileExtension(file.originalname),
+        size: bytesToSize(file.size),
         url: generateS3FileUrl(file.key),
         key: file.key
-      };
-    });
+      }));
+      const totalFileSize = uploadedFiles.reduce((acc, file) => acc + file.size, 0);
  
-    existingAsset.assetName = assetName;
-    existingAsset.assetID = assetID;
-    existingAsset.price = price;
-    existingAsset.description = description;
-    existingAsset.quads = quads;
-    existingAsset.totalTriangles = totalTriangles;
-    existingAsset.vertices = vertices;
-    existingAsset.materials = materials;
-    existingAsset.rigged = rigged;
-    existingAsset.fileFormats = fileFormats;
-    existingAsset.category = categoryId;
-    existingAsset.files = files;
-    existingAsset.totalFileSize = bytesToSize(totalSizeBytes);
+      // Update asset metadata in MongoDB
+      existingAsset.assetName = req.body.assetName;
+      existingAsset.price = req.body.price;
+      existingAsset.description = req.body.description;
+      existingAsset.quads = req.body.quads;
+      existingAsset.totalTriangles = req.body.totalTriangles;
+      existingAsset.vertices = req.body.vertices;
+      existingAsset.materials = req.body.materials;
+      existingAsset.rigged = req.body.rigged;
+      existingAsset.fileFormats = req.body.fileFormats;
+      existingAsset.category = assetCategory;
+      existingAsset.files = updatedFiles;
+      existingAsset.totalFileSize = bytesToSize(totalFileSize);
  
-    const updatedAsset = await existingAsset.save();
+      const updatedAsset = await existingAsset.save();
  
-    res.status(200).json({
-      message: 'Asset updated successfully',
-      asset: updatedAsset
+      // Respond with success message
+      res.status(200).json({
+        message: "Asset updated successfully",
+        updatedAsset
+      });
     });
   } catch (error) {
-    console.error('Error updating asset:', error);
-    // Pass error to error handler middleware
+    console.error("Error updating asset:", error);
     next(error);
   }
 };
  
  
  
-  export const getAssetsById = async (req, res, next) => {
-    try {
-      const { assetId } = req.params;
-      const asset = await Asset.findById(assetId);
+// Delete asset
+export const deleteAsset = async (req, res, next) => {
+  try {
+    const {assetId} = req.params;
+ 
+    // Retrieve existing asset data from MongoDB
+    const existingAsset = await Asset.findById(assetId);
+    if (!existingAsset) {
+      return res.status(404).json({ message: "Asset not found" });
+    }
+ 
+    // Delete files from the Wasabi bucket
+    for (const file of existingAsset.files) {
+      await deleteFileFromS3(`${file.key}`);
+    }
+ 
+    // Delete asset entry from MongoDB
+    await Asset.findByIdAndDelete(assetId);
+ 
+    // Respond with success message
+    res.status(200).json({ message: "Asset deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting asset:", error);
+    next(error);
+  }
+};
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+// Get Single asset
+export const getAssetById = async (req, res) => {
+  try {
+      const {assetId} = req.params;
      
+      const asset = await Asset.findById(assetId);
+ 
       if (!asset) {
-        return res.status(404).json({ message: 'Asset not found' });
+          return res.status(404).json({ message: 'Asset not found' });
       }
  
-      res.status(200).json({ asset });
-    } catch (error) {
-      console.error('Error fetching asset by ID:', error);
-      next(error);
-    }
-  };
+      // Generate signed URL for the GLB file
+      const glbFile = asset.files.find(file => file.format === 'glb');
+      if (!glbFile) {
+          return res.status(400).json({ message: 'GLB file not found for this asset' });
+      }
+ 
+      const signedUrl = await getSignedUrl(glbFile.key);
+      console.log(signedUrl);
+ 
+      // Return asset metadata and signed URL
+      res.json({
+          id: asset._id,
+          assetName: asset.assetName,
+          assetID: asset.assetID,
+          price: asset.price,
+          description: asset.description,
+          quads: asset.quads,
+          totalTriangles: asset.totalTriangles,
+          vertices: asset.vertices,
+          materials: asset.materials,
+          rigged: asset.rigged,
+          totalFileSize: asset.totalFileSize,
+          fileFormats: asset.fileFormats,
+          category: asset.category,
+          signedUrl, // The signed URL for the GLB file
+      });
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Server error' });
+  }
+};
  
  
  
-  // Asset Download
-  export const downloadAsset=async(req,res)=>{
-    try{
+// Asset Download
+export const downloadAsset=async(req,res)=>{
+  try{
 const {assetId,fileIndex}=req.params;
 const asset=await Asset.findById(assetId);
 if(!asset){
-  return res.status(404).json({message:"Asset not found"});
+return res.status(404).json({message:"Asset not found"});
 }
  
 if(fileIndex<0||fileIndex>=asset.files.length){
-  return res.status(400).json({message:"Invalid file Index"
-  });
+return res.status(400).json({message:"Invalid file Index"
+});
 }
  
 const file=asset.files[fileIndex];
  
 const params={
-  Bucket:process.env.WASABI_REGION,
-  Key:file.key,
-  Expires:500,
+Bucket:process.env.WASABI_BUCKET,
+Key:file.key,
+Expires:500,
 };
  
 const url = await s3.getSignedUrlPromise('getObject', params);
 console.log(url);
 res.redirect(url);
-  }catch(error){
-    console.log(error);
-    res.status(500).json({error:"failed to serve asset File"});
-  }
+}catch(error){
+  console.log(error);
+  res.status(500).json({error:"failed to serve asset File"});
+}
  
-  };
+};
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+// get assets by category
+export const getAssetsByCategory = async (req, res, next) => {
+  try {
+    const { categoryId } = req.params;
+ 
+    // Retrieve assets by category ID from MongoDB
+    const assets = await Asset.find({ category: categoryId });
+ 
+    // Generate signed URLs for JPG/PNG files and attach to assets
+    const assetsWithSignedUrls = await Promise.all(assets.map(async (asset) => {
+      const imageFile = asset.files.find(file => ['jpg', 'jpeg', 'png'].includes(file.format));
+      if (imageFile) {
+        const signedUrl = await getSignedUrl(imageFile.key);
+        // Include files array only if an image file exists
+        return {
+          ...asset.toObject(),
+          imageUrl: signedUrl,
+          files: undefined // Exclude files array from assets without image files
+        };
+      }
+      // If no image file found, include all metadata without imageUrl and files array
+      return {
+        ...asset.toObject(),
+        imageUrl: null,
+        files: undefined
+      };
+    }));
+ 
+    // Respond with assets containing signed image URLs and other metadata
+    res.status(200).json(assetsWithSignedUrls);
+  } catch (error) {
+    console.error("Error getting assets by category:", error);
+    next(error);
+  }
+};
+ 
+ 
+ 
+ 
+ 
+// Get all assets
+export const getAllAssets = async (req, res, next) => {
+  try {
+    // Retrieve all assets from MongoDB
+    const assets = await Asset.find();
+ 
+    // Generate signed URLs for JPG/PNG files and attach to assets
+    const assetsWithSignedUrls = await Promise.all(assets.map(async (asset) => {
+      const imageFile = asset.files.find(file => ['jpg', 'jpeg', 'png'].includes(file.format));
+      if (imageFile) {
+        const signedUrl = await getSignedUrl(imageFile.key);
+        // Include files array only if an image file exists
+        return {
+          ...asset.toObject(),
+          imageUrl: signedUrl,
+          files: undefined // Exclude files array from assets without image files
+        };
+      }
+      // If no image file found, include all metadata without imageUrl and files array
+      return {
+        ...asset.toObject(),
+        imageUrl: null,
+        files: undefined
+      };
+    }));
+ 
+    // Respond with assets containing signed image URLs and other metadata
+    res.status(200).json(assetsWithSignedUrls);
+  } catch (error) {
+    console.error("Error getting all assets:", error);
+    next(error);
+  }
+};
