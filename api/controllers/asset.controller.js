@@ -275,6 +275,10 @@ export const getAssetsByCategory = async (req, res, next) => {
   try {
     const { categoryId } = req.params;
  
+    const category = await Category.findById(categoryId);
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
     // Retrieve assets by category ID from MongoDB
     const assets = await Asset.find({ category: categoryId });
  
@@ -284,9 +288,10 @@ export const getAssetsByCategory = async (req, res, next) => {
       if (imageFile) {
         const signedUrl = await getSignedUrl(imageFile.key);
         // Include files array only if an image file exists
-        return {  
+        return {
           ...asset.toObject(),
           imageUrl: signedUrl,
+          categoryName:category.categoryName,
           files: undefined // Exclude files array from assets without image files
         };
       }
@@ -305,7 +310,6 @@ export const getAssetsByCategory = async (req, res, next) => {
     next(error);
   }
 };
- 
  
  
  
