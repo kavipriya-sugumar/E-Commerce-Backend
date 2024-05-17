@@ -5,6 +5,7 @@ import Payment from '../models/payment.model.js';
 import User from '../models/user.model.js';
 import mongoose from 'mongoose';
 import sendEmail from '../utils/nodemailer.js';
+import Cart from '../models/cart.model.js';
 
 dotenv.config();
 
@@ -83,7 +84,7 @@ export const RazorValidate = async (req, res) => {
             console.log("payment details store succesfully")
         }
  
-        const deleteCart = await Cart.delete({assetId:createPaymentDetails?.usercart?.productId?._id})
+        const deleteCart = await Cart.deleteOne({assetId:createPaymentDetails?.usercart?.productId?._id})
         if(deleteCart)  return console.log("you purchase the product removed cart successsfully")
             return console.log("remove cart failed")
 }
