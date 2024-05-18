@@ -10,6 +10,7 @@ import { getFileExtension } from "../utils/fileExtension.js";
  
 // Create asset
 export const createAsset = async (req, res, next) => {
+  console.log(req);
   try {
 if (!req.files) res.status(400).json({ error: 'No files were uploaded.' })
     const uploadedFiles=req.files;
