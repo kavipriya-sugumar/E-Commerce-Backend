@@ -22,6 +22,9 @@ const PaymentSchema = new mongoose.Schema({
     type:String,
     required:true
   },
+  paid:{
+  type: Boolean,
+  },
   date:{
     type:String,
     required:true
