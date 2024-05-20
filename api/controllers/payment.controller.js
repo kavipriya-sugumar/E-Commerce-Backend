@@ -33,7 +33,7 @@ export const RazorOrder=async (req,res)=>{
 
 
 export const RazorValidate = async (req, res) => {
-    console.log(req.body);
+    console.log(req.body?.userDetails?.email);
     const usercart = req?.body?.usercart
     let assetIds
     usercart.map((each)=>(assetIds = each))
@@ -70,7 +70,7 @@ console.log("assetId", assetIds)
  
           let subject = `Purchase Details`
           let text = `orderId : ${razorpay_order_id}, paymentId : ${razorpay_payment_id}`
-          let sendEmailOtp = await sendEmail(req.body?.email,subject, text);
+          let sendEmailOtp = await sendEmail(userDetails?.email, subject,text);
      if(!sendEmail) console.log("email send failed")
  
  
@@ -97,8 +97,8 @@ console.log("assetId", assetIds)
         }
         console.log("userDetails",userDetails?._id )
  
-        const deleteResult = await Cart.deleteMany({ userId: userDetails?._id });
-        if (deleteResult.deletedCount > 0) {
+        const deleteResult = await Cart.deleteMany({ userId: new mongoose.Types.ObjectId(userDetails?._id)});
+        if (deleteResult) {
             console.log("The product was removed from the cart successfully.");
         } else {
             console.log("Failed to remove the product from the cart.");
