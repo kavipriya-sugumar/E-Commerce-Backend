@@ -1,6 +1,5 @@
 import { Timestamp } from "mongodb";
 import mongoose from "mongoose";
- 
 const PaymentSchema = new mongoose.Schema({
   userDetails:{
     type:Object,
@@ -22,12 +21,14 @@ const PaymentSchema = new mongoose.Schema({
     type:String,
     required:true
   },
+  paid:{
+  type: Boolean,
+  },
   date:{
     type:String,
     required:true
   }
 }
 );
- 
 const PaymentModel = mongoose.model("PaymentModel", PaymentSchema);
 export default PaymentModel;

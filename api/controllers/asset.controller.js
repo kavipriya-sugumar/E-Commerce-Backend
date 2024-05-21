@@ -189,82 +189,120 @@ export const deleteAsset = async (req, res, next) => {
  
  
 // Get Single asset
+// Get Single asset
+ 
 export const getAssetById = async (req, res) => {
   try {
-      const {assetId} = req.params;
-     
-      const asset = await Asset.findById(assetId);
+    const { assetId } = req.params;
+   
+    const asset = await Asset.findById(assetId);
  
-      if (!asset) {
-          return res.status(404).json({ message: 'Asset not found' });
-      }
+    if (!asset) {
+      return res.status(404).json({ message: 'Asset not found' });
+    }
  
-      // Generate signed URL for the GLB file
-      const glbFile = asset.files.find(file => file.format === 'glb');
-      if (!glbFile) {
-          return res.status(400).json({ message: 'GLB file not found for this asset' });
-      }
+    // Generate signed URL for the GLB file
+    // const glbFile = asset.files.find(file => file.format === 'glb');
+    // if (!glbFile) {
+    //   return res.status(400).json({ message: 'GLB file not found for this asset' });
+    // }
  
-      const signedUrl = await getSignedUrl(glbFile.key);
-      console.log(signedUrl);
+    // const signedGlbUrl = await getSignedUrl(glbFile.key);
+    // console.log(signedGlbUrl);
  
-      // Return asset metadata and signed URL
-      res.json({
-          id: asset._id,
-          assetName: asset.assetName,
-          assetID: asset.assetID,
-          price: asset.price,
-          description: asset.description,
-          quads: asset.quads,
-          totalTriangles: asset.totalTriangles,
-          vertices: asset.vertices,
-          materials: asset.materials,
-          rigged: asset.rigged,
-          totalFileSize: asset.totalFileSize,
-          fileFormats: asset.fileFormats,
-          category: asset.category,
-          signedUrl, // The signed URL for the GLB file
-      });
+    // Find the first JPEG, JPG, or PNG file and generate signed URL if present
+    const imageFile = asset.files.find(file => ['jpg', 'jpeg', 'png'].includes(file.format));
+    let signedImageUrl = null;
+    if (imageFile) {
+      signedImageUrl = await getSignedUrl(imageFile.key);
+    }
+ 
+    console.log(signedImageUrl);
+ 
+    // Return asset metadata and signed URLs
+    res.json({
+      id: asset._id,
+      assetName: asset.assetName,
+      assetID: asset.assetID,
+      price: asset.price,
+      description: asset.description,
+      quads: asset.quads,
+      totalTriangles: asset.totalTriangles,
+      vertices: asset.vertices,
+      materials: asset.materials,
+      rigged: asset.rigged,
+      totalFileSize: asset.totalFileSize,
+      fileFormats: asset.fileFormats,
+      category: asset.category,
+      // signedImageUrl: signedGlbUrl, // The signed URL for the GLB file
+      signedImageSingleUrl: signedImageUrl // Signed URL for the first JPEG, JPG, or PNG file
+    });
   } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Server error' });
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getSignedGlbUrl = async (req, res) => {
+  try {
+    const { assetId } = req.params;
+ 
+    const asset = await Asset.findById(assetId);
+ 
+    if (!asset) {
+      return res.status(404).json({ message: 'Asset not found' });
+    }
+ 
+    // Find GLB file for the asset
+    const glbFile = asset.files.find(file => file.format === 'glb');
+    if (!glbFile) {
+      return res.status(400).json({ message: 'GLB file not found for this asset' });
+    }
+ 
+    // Generate signed URL for the GLB file
+    const signedGlbUrl = await getSignedUrl(glbFile.key);
+ 
+    // Return signed URL for GLB file
+    res.json({ signedGlbUrl });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
  
  
  
 // Asset Download
-export const downloadAsset=async(req,res)=>{
-  try{
-const {assetId,fileIndex}=req.params;
-const asset=await Asset.findById(assetId);
-if(!asset){
-return res.status(404).json({message:"Asset not found"});
-}
+export const downloadAsset = async (req, res) => {
+  try {
+    const { assetId } = req.params;
+    const asset = await Asset.findById(assetId);
  
-if(fileIndex<0||fileIndex>=asset.files.length){
-return res.status(400).json({message:"Invalid file Index"
-});
-}
+    if (!asset) {
+      return res.status(404).json({ message: "Asset not found" });
+    }
  
-const file=asset.files[fileIndex];
+    const signedUrls = {};
  
-const params={
-Bucket:process.env.WASABI_BUCKET,
-Key:file.key,
-Expires:500,
+    for (const file of asset.files) {
+      const { format, key } = file;
+ 
+      const params = {
+        Bucket: process.env.WASABI_BUCKET,
+        Key: key,
+        Expires: 500,
+      };
+ 
+      const url = await s3.getSignedUrlPromise('getObject', params);
+      signedUrls[format] = url;
+    }
+ 
+    res.json(signedUrls); // Send signed URLs mapped by file format
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Failed to serve asset files" });
+  }
 };
- 
-const url = await s3.getSignedUrlPromise('getObject', params);
-console.log(url);
-res.redirect(url);
-}catch(error){
-  console.log(error);
-  res.status(500).json({error:"failed to serve asset File"});
-}
- 
-};
- 
  
  
  

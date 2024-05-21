@@ -6,5 +6,5 @@ const router = express.Router();
 router.post("/order",RazorOrder );
 router.post("/ordervalidate",RazorValidate);
 router.get("/getAllPurchaseHistory",verifyTokenAndAdmin,getAllPaymentDetails);
-router.get("/getParticularUserHistory",verifyTokenAndAdmin,getParticularPurchaseHistory);
+router.get("/getParticularUserHistory",verifyUser,getParticularPurchaseHistory);
 export default router;
